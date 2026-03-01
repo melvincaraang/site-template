@@ -7,6 +7,7 @@
 	let code = $state('');
 	let error = $state('');
 	let loading = $state(false);
+	let adminMode = $state(false);
 
 	// Check for token in URL on mount
 	$effect(() => {
@@ -34,11 +35,11 @@
 		loading = true;
 		error = '';
 		try {
-			await api.verify({ code: code.trim() });
-			authState.role = 'guest';
-			goto('/gallery');
+			await api.verify({ code: code.trim(), admin: adminMode });
+			authState.role = adminMode ? 'admin' : 'guest';
+			goto(adminMode ? '/admin' : '/gallery');
 		} catch {
-			error = 'Invalid code. Please try again.';
+			error = adminMode ? 'Invalid admin code.' : 'Invalid code. Please try again.';
 		} finally {
 			loading = false;
 		}
@@ -60,13 +61,15 @@
 			<p class="font-display text-brown mb-8 text-2xl">Years of Love & Memories</p>
 
 			<div class="border-gold/30 rounded-lg border bg-white/80 p-8 shadow-lg backdrop-blur-sm">
-				<p class="text-brown-light mb-6 text-lg">Enter the party code to view the celebration</p>
+				<p class="text-brown-light mb-6 text-lg">
+					{adminMode ? 'Enter the admin code' : 'Enter the party code to view the celebration'}
+				</p>
 
 				<form onsubmit={handleSubmit} class="space-y-4">
 					<input
-						type="text"
+						type={adminMode ? 'password' : 'text'}
 						bind:value={code}
-						placeholder="Enter party code"
+						placeholder={adminMode ? 'Enter admin code' : 'Enter party code'}
 						class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold bg-cream/50 w-full rounded-md border px-4 py-3 text-center text-lg"
 					/>
 
@@ -79,9 +82,17 @@
 						disabled={loading || !code.trim()}
 						class="bg-brown hover:bg-brown-light text-cream w-full rounded-md px-6 py-3 text-lg transition-colors disabled:opacity-50"
 					>
-						{loading ? 'Verifying...' : 'Enter'}
+						{loading ? 'Verifying...' : adminMode ? 'Sign In' : 'Enter'}
 					</button>
 				</form>
+
+				<button
+					type="button"
+					onclick={() => { adminMode = !adminMode; code = ''; error = ''; }}
+					class="text-brown-light/60 hover:text-brown-light mt-4 text-sm underline"
+				>
+					{adminMode ? 'Back to party login' : 'Admin login'}
+				</button>
 			</div>
 		</div>
 	</div>
