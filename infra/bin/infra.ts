@@ -12,10 +12,13 @@ if (!account) {
   throw new Error('Set CDK_DEFAULT_ACCOUNT environment variable.');
 }
 
+const apiGatewayDomain = app.node.tryGetContext('apiGatewayDomain') as string | undefined;
+
 new BirthdayTributeSiteStack(app, 'DadBirthdayStack', {
   env: { account, region },
   domainName: 'dad.melvinit.com',
   parentDomainName: 'melvinit.com',
+  apiGatewayDomain: apiGatewayDomain || undefined,
   tags: {
     Project: 'DadBirthday',
     Environment: 'Production',
