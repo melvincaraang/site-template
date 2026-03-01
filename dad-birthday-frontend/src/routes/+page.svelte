@@ -59,17 +59,15 @@
 			<h1 class="font-display text-gold mb-2 text-6xl font-bold">80</h1>
 			<p class="font-display text-brown mb-8 text-2xl">Years of Love & Memories</p>
 
-			<div class="rounded-lg border border-gold/30 bg-white/80 p-8 shadow-lg backdrop-blur-sm">
-				<p class="text-brown-light mb-6 text-lg">
-					Enter the party code to view the celebration
-				</p>
+			<div class="border-gold/30 rounded-lg border bg-white/80 p-8 shadow-lg backdrop-blur-sm">
+				<p class="text-brown-light mb-6 text-lg">Enter the party code to view the celebration</p>
 
 				<form onsubmit={handleSubmit} class="space-y-4">
 					<input
 						type="text"
 						bind:value={code}
 						placeholder="Enter party code"
-						class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold w-full rounded-md border bg-cream/50 px-4 py-3 text-center text-lg"
+						class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold bg-cream/50 w-full rounded-md border px-4 py-3 text-center text-lg"
 					/>
 
 					{#if error}
@@ -79,7 +77,7 @@
 					<button
 						type="submit"
 						disabled={loading || !code.trim()}
-						class="bg-brown hover:bg-brown-light w-full rounded-md px-6 py-3 text-lg text-cream transition-colors disabled:opacity-50"
+						class="bg-brown hover:bg-brown-light text-cream w-full rounded-md px-6 py-3 text-lg transition-colors disabled:opacity-50"
 					>
 						{loading ? 'Verifying...' : 'Enter'}
 					</button>

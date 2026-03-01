@@ -4,12 +4,12 @@
 @plugin '@tailwindcss/typography';
 
 @theme {
-	--color-cream: #FFF8F0;
-	--color-cream-dark: #F5EDE0;
-	--color-brown: #3E2723;
-	--color-brown-light: #5D4037;
-	--color-gold: #C8A96E;
-	--color-gold-light: #D4BC8B;
+	--color-cream: #fff8f0;
+	--color-cream-dark: #f5ede0;
+	--color-brown: #3e2723;
+	--color-brown-light: #5d4037;
+	--color-gold: #c8a96e;
+	--color-gold-light: #d4bc8b;
 	--color-sepia: #704214;
 	--font-display: 'Playfair Display', serif;
 	--font-handwriting: 'Caveat', cursive;
@@ -21,6 +21,8 @@ body {
 	color: var(--color-brown);
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
 	font-family: var(--font-display);
 }

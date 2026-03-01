@@ -6,7 +6,7 @@
 	let { children } = $props();
 </script>
 
-<div class="min-h-screen bg-cream">
+<div class="bg-cream min-h-screen">
 	{#if authState.role}
 		<Nav />
 	{/if}

@@ -118,23 +118,23 @@
 			class:border-gold={activeTab === 'media'}
 			class:text-brown={activeTab === 'media'}
 			class:text-brown-light={activeTab !== 'media'}
-			onclick={() => (activeTab = 'media')}
-		>Upload Media</button>
+			onclick={() => (activeTab = 'media')}>Upload Media</button
+		>
 		<button
 			class="pb-2 transition-colors"
 			class:border-b-2={activeTab === 'tokens'}
 			class:border-gold={activeTab === 'tokens'}
 			class:text-brown={activeTab === 'tokens'}
 			class:text-brown-light={activeTab !== 'tokens'}
-			onclick={() => (activeTab = 'tokens')}
-		>Access Tokens</button>
+			onclick={() => (activeTab = 'tokens')}>Access Tokens</button
+		>
 	</div>
 
 	{#if loading}
 		<p class="text-brown-light italic">Loading...</p>
 	{:else if activeTab === 'media'}
 		<!-- Upload form -->
-		<div class="mb-8 rounded-lg border border-gold/30 bg-white/80 p-6">
+		<div class="border-gold/30 mb-8 rounded-lg border bg-white/80 p-6">
 			<h2 class="font-display text-brown mb-4 text-xl">Upload Photos & Videos</h2>
 			<form onsubmit={handleUpload} class="space-y-4">
 				<input
@@ -153,7 +153,7 @@
 				<button
 					type="submit"
 					disabled={uploading || !uploadFiles?.length}
-					class="bg-brown hover:bg-brown-light rounded-md px-6 py-2 text-cream disabled:opacity-50"
+					class="bg-brown hover:bg-brown-light text-cream rounded-md px-6 py-2 disabled:opacity-50"
 				>
 					{uploading ? 'Uploading...' : 'Upload'}
 				</button>
@@ -163,27 +163,33 @@
 		<!-- Media list -->
 		<div class="space-y-3">
 			{#each media as item (item.id)}
-				<div class="flex items-center gap-4 rounded-lg border border-gold/20 bg-white/70 p-3">
+				<div class="border-gold/20 flex items-center gap-4 rounded-lg border bg-white/70 p-3">
 					{#if item.type === 'video'}
-						<div class="bg-brown-light/20 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded">
+						<div
+							class="bg-brown-light/20 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded"
+						>
 							<span class="text-sm">Video</span>
 						</div>
 					{:else}
-						<img src={item.url} alt={item.caption} class="h-16 w-16 flex-shrink-0 rounded object-cover" />
+						<img
+							src={item.url}
+							alt={item.caption}
+							class="h-16 w-16 flex-shrink-0 rounded object-cover"
+						/>
 					{/if}
 					<div class="flex-1">
 						<p class="text-brown text-sm">{item.caption || '(no caption)'}</p>
 					</div>
 					<button
 						class="text-sm text-red-600 hover:text-red-800"
-						onclick={() => handleDeleteMedia(item.id)}
-					>Delete</button>
+						onclick={() => handleDeleteMedia(item.id)}>Delete</button
+					>
 				</div>
 			{/each}
 		</div>
 	{:else}
 		<!-- Token creation -->
-		<div class="mb-8 rounded-lg border border-gold/30 bg-white/80 p-6">
+		<div class="border-gold/30 mb-8 rounded-lg border bg-white/80 p-6">
 			<h2 class="font-display text-brown mb-4 text-xl">Create Access Link</h2>
 			<form onsubmit={handleCreateToken} class="space-y-4">
 				<input
@@ -209,7 +215,7 @@
 				<button
 					type="submit"
 					disabled={creatingToken || !tokenLabel.trim()}
-					class="bg-brown hover:bg-brown-light rounded-md px-6 py-2 text-cream disabled:opacity-50"
+					class="bg-brown hover:bg-brown-light text-cream rounded-md px-6 py-2 disabled:opacity-50"
 				>
 					{creatingToken ? 'Creating...' : 'Create Link'}
 				</button>
@@ -219,7 +225,7 @@
 		<!-- Token list -->
 		<div class="space-y-3">
 			{#each tokens as token (token.uuid)}
-				<div class="rounded-lg border border-gold/20 bg-white/70 p-4">
+				<div class="border-gold/20 rounded-lg border bg-white/70 p-4">
 					<div class="flex items-center justify-between">
 						<div>
 							<p class="text-brown font-medium">{token.label || '(no label)'}</p>
@@ -229,10 +235,10 @@
 						</div>
 						<button
 							class="text-sm text-red-600 hover:text-red-800"
-							onclick={() => handleDeleteToken(token.uuid)}
-						>Revoke</button>
+							onclick={() => handleDeleteToken(token.uuid)}>Revoke</button
+						>
 					</div>
-					<p class="mt-2 rounded bg-cream/50 p-2 text-xs break-all">
+					<p class="bg-cream/50 mt-2 rounded p-2 text-xs break-all">
 						https://dad.melvinit.com/?token={token.uuid}
 					</p>
 				</div>

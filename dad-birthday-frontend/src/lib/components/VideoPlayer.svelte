@@ -3,11 +3,6 @@
 </script>
 
 <!-- svelte-ignore a11y_media_has_caption -->
-<video
-	controls
-	preload="metadata"
-	class={className}
-	{src}
->
+<video controls preload="metadata" class={className} {src}>
 	Your browser does not support the video tag.
 </video>
