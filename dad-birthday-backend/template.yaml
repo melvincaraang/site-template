@@ -18,6 +18,9 @@ Parameters:
   CloudFrontDomain:
     Type: String
     Default: dad.melvinit.com
+  DynamoDbEndpoint:
+    Type: String
+    Default: ''
 
 Globals:
   Function:
@@ -33,6 +36,7 @@ Globals:
         ADMIN_CODE: !Ref AdminCode
         JWT_SECRET: !Ref JwtSecret
         CLOUDFRONT_DOMAIN: !Ref CloudFrontDomain
+        DYNAMODB_ENDPOINT: !Ref DynamoDbEndpoint
     LoggingConfig:
       LogFormat: JSON
 
