@@ -1,1 +1,90 @@
-<h1 class="p-8 text-center text-4xl text-brown">Happy 80th Birthday!</h1>
+<script lang="ts">
+	import { api } from '$lib/api';
+	import { authState } from '$lib/stores/auth.svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+
+	let code = $state('');
+	let error = $state('');
+	let loading = $state(false);
+
+	// Check for token in URL on mount
+	$effect(() => {
+		const token = $page.url.searchParams.get('token');
+		if (token) {
+			verifyToken(token);
+		} else {
+			authState.checking = false;
+		}
+	});
+
+	async function verifyToken(token: string) {
+		try {
+			await api.verify({ token });
+			authState.role = 'guest';
+			goto('/gallery');
+		} catch {
+			authState.checking = false;
+			error = 'This link has expired or is invalid.';
+		}
+	}
+
+	async function handleSubmit() {
+		if (!code.trim()) return;
+		loading = true;
+		error = '';
+		try {
+			await api.verify({ code: code.trim() });
+			authState.role = 'guest';
+			goto('/gallery');
+		} catch {
+			error = 'Invalid code. Please try again.';
+		} finally {
+			loading = false;
+		}
+	}
+</script>
+
+<svelte:head>
+	<title>Dad's 80th Birthday</title>
+</svelte:head>
+
+{#if authState.checking}
+	<div class="flex min-h-screen items-center justify-center">
+		<p class="text-brown-light text-xl italic">Checking your invitation...</p>
+	</div>
+{:else}
+	<div class="flex min-h-screen flex-col items-center justify-center px-4">
+		<div class="w-full max-w-md text-center">
+			<h1 class="font-display text-gold mb-2 text-6xl font-bold">80</h1>
+			<p class="font-display text-brown mb-8 text-2xl">Years of Love & Memories</p>
+
+			<div class="rounded-lg border border-gold/30 bg-white/80 p-8 shadow-lg backdrop-blur-sm">
+				<p class="text-brown-light mb-6 text-lg">
+					Enter the party code to view the celebration
+				</p>
+
+				<form onsubmit={handleSubmit} class="space-y-4">
+					<input
+						type="text"
+						bind:value={code}
+						placeholder="Enter party code"
+						class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold w-full rounded-md border bg-cream/50 px-4 py-3 text-center text-lg"
+					/>
+
+					{#if error}
+						<p class="text-sm text-red-600">{error}</p>
+					{/if}
+
+					<button
+						type="submit"
+						disabled={loading || !code.trim()}
+						class="bg-brown hover:bg-brown-light w-full rounded-md px-6 py-3 text-lg text-cream transition-colors disabled:opacity-50"
+					>
+						{loading ? 'Verifying...' : 'Enter'}
+					</button>
+				</form>
+			</div>
+		</div>
+	</div>
+{/if}
