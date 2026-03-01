@@ -88,7 +88,11 @@
 
 				<button
 					type="button"
-					onclick={() => { adminMode = !adminMode; code = ''; error = ''; }}
+					onclick={() => {
+						adminMode = !adminMode;
+						code = '';
+						error = '';
+					}}
 					class="text-brown-light/60 hover:text-brown-light mt-4 text-sm underline"
 				>
 					{adminMode ? 'Back to party login' : 'Admin login'}

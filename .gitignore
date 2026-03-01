@@ -9,6 +9,7 @@ dist/
 
 # CDK
 cdk.out/
+cdk.context.json
 
 # Environment
 .env
