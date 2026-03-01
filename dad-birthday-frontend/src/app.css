@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Caveat:wght@400..700&display=swap');
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+@theme {
+	--color-cream: #FFF8F0;
+	--color-cream-dark: #F5EDE0;
+	--color-brown: #3E2723;
+	--color-brown-light: #5D4037;
+	--color-gold: #C8A96E;
+	--color-gold-light: #D4BC8B;
+	--color-sepia: #704214;
+	--font-display: 'Playfair Display', serif;
+	--font-handwriting: 'Caveat', cursive;
+}
+
+body {
+	font-family: var(--font-display);
+	background-color: var(--color-cream);
+	color: var(--color-brown);
+}
+
+h1, h2, h3 {
+	font-family: var(--font-display);
+}
