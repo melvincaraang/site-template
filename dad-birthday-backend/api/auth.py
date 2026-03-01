@@ -7,7 +7,11 @@ import jwt
 
 
 def get_dynamodb_table():
-    dynamodb = boto3.resource("dynamodb")
+    endpoint = os.environ.get("DYNAMODB_ENDPOINT")
+    if endpoint:
+        dynamodb = boto3.resource("dynamodb", endpoint_url=endpoint)
+    else:
+        dynamodb = boto3.resource("dynamodb")
     return dynamodb.Table(os.environ["TABLE_NAME"])
 
 
