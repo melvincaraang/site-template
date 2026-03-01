@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Dad's 80th Birthday Tribute Site — API Backend
+
+Parameters:
+  TableName:
+    Type: String
+    Default: DadBirthdayTable
+  MediaBucket:
+    Type: String
+  PartyCode:
+    Type: String
+  AdminCode:
+    Type: String
+  JwtSecret:
+    Type: String
+    NoEcho: true
+  CloudFrontDomain:
+    Type: String
+    Default: dad.melvinit.com
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: python3.13
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref TableName
+        MEDIA_BUCKET: !Ref MediaBucket
+        PARTY_CODE: !Ref PartyCode
+        ADMIN_CODE: !Ref AdminCode
+        JWT_SECRET: !Ref JwtSecret
+        CLOUDFRONT_DOMAIN: !Ref CloudFrontDomain
+    LoggingConfig:
+      LogFormat: JSON
+
+Resources:
+  BirthdayApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: api/
+      Handler: app.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+        - S3CrudPolicy:
+            BucketName: !Ref MediaBucket
+      Events:
+        Verify:
+          Type: Api
+          Properties:
+            Path: /verify
+            Method: post
+        GetMedia:
+          Type: Api
+          Properties:
+            Path: /media
+            Method: get
+        GetMessages:
+          Type: Api
+          Properties:
+            Path: /messages
+            Method: get
+        PostMessage:
+          Type: Api
+          Properties:
+            Path: /messages
+            Method: post
+        AdminGetTokens:
+          Type: Api
+          Properties:
+            Path: /admin/tokens
+            Method: get
+        AdminPostToken:
+          Type: Api
+          Properties:
+            Path: /admin/tokens
+            Method: post
+        AdminDeleteToken:
+          Type: Api
+          Properties:
+            Path: /admin/tokens/{uuid}
+            Method: delete
+        AdminUploadUrl:
+          Type: Api
+          Properties:
+            Path: /admin/media/upload-url
+            Method: post
+        AdminPostMedia:
+          Type: Api
+          Properties:
+            Path: /admin/media
+            Method: post
+        AdminDeleteMedia:
+          Type: Api
+          Properties:
+            Path: /admin/media/{id}
+            Method: delete
+        AdminPutMedia:
+          Type: Api
+          Properties:
+            Path: /admin/media/{id}
+            Method: put
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  BirthdayApiFunction:
+    Description: Lambda Function ARN
+    Value: !GetAtt BirthdayApiFunction.Arn
