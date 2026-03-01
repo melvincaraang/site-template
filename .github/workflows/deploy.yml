@@ -10,8 +10,12 @@ permissions:
   id-token: write
   contents: read
 
+env:
+  AWS_REGION: us-east-1
+
 jobs:
-  deploy-frontend:
+  # ── Build & Test (runs on every PR and push) ──────────────
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,32 +24,115 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      # Frontend
+      - name: Install frontend dependencies
         working-directory: ./dad-birthday-frontend
-        run: npm install
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: ./dad-birthday-frontend
+        run: npm run lint
+
+      - name: Type-check frontend
+        working-directory: ./dad-birthday-frontend
+        run: npm run check
 
       - name: Build frontend
         working-directory: ./dad-birthday-frontend
         run: npm run build
 
+      - name: Unit test frontend
+        working-directory: ./dad-birthday-frontend
+        run: npm run test:unit -- --run
+
+      # Backend
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install backend dependencies
+        working-directory: ./dad-birthday-backend
+        run: pip install -r api/requirements.txt -r tests/requirements.txt
+
+      - name: Test backend
+        working-directory: ./dad-birthday-backend
+        run: python -m pytest tests/unit -v
+
+      # Infra
+      - name: Install CDK dependencies
+        working-directory: ./infra
+        run: npm ci
+
+      - name: Build CDK
+        working-directory: ./infra
+        run: npm run build
+
+      # Upload frontend build for deploy job
+      - name: Upload frontend build
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: ./dad-birthday-frontend/build
+          retention-days: 1
+
+  # ── Deploy CDK Infrastructure ─────────────────────────────
+  deploy-infra:
+    if: github.event_name == 'push'
+    needs: ci
+    runs-on: ubuntu-latest
+    outputs:
+      site-bucket: ${{ steps.outputs.outputs.site-bucket }}
+      media-bucket: ${{ steps.outputs.outputs.media-bucket }}
+      distribution-id: ${{ steps.outputs.outputs.distribution-id }}
+      table-name: ${{ steps.outputs.outputs.table-name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install CDK dependencies
+        working-directory: ./infra
+        run: npm ci
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to S3
-        uses: reggionick/s3-deploy@v4
-        with:
-          folder: ./dad-birthday-frontend/build
-          bucket: ${{ secrets.DAD_S3_BUCKET_NAME }}
-          bucket-region: ${{ secrets.AWS_REGION }}
-          dist-id: ${{ secrets.DAD_CLOUDFRONT_DISTRIBUTION_ID }}
-          invalidation: /
-          delete-removed: true
-          private: true
+      - name: CDK deploy
+        working-directory: ./infra
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.CDK_DEFAULT_ACCOUNT }}
+        run: |
+          npx cdk deploy DadBirthdayStack \
+            --require-approval never \
+            -c apiGatewayDomain=${{ secrets.DAD_API_GATEWAY_DOMAIN }}
 
+      - name: Extract stack outputs
+        id: outputs
+        run: |
+          OUTPUTS=$(aws cloudformation describe-stacks \
+            --stack-name DadBirthdayStack \
+            --query "Stacks[0].Outputs" \
+            --output json)
+
+          get_output() {
+            echo "$OUTPUTS" | jq -r ".[] | select(.OutputKey==\"$1\") | .OutputValue"
+          }
+
+          echo "site-bucket=$(get_output SiteBucketName)" >> "$GITHUB_OUTPUT"
+          echo "media-bucket=$(get_output MediaBucketName)" >> "$GITHUB_OUTPUT"
+          echo "distribution-id=$(get_output DistributionId)" >> "$GITHUB_OUTPUT"
+          echo "table-name=$(get_output TableName)" >> "$GITHUB_OUTPUT"
+
+  # ── Deploy SAM Backend ────────────────────────────────────
   deploy-backend:
+    if: github.event_name == 'push'
+    needs: deploy-infra
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,7 +147,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: SAM build
         working-directory: ./dad-birthday-backend
@@ -69,11 +156,43 @@ jobs:
       - name: SAM deploy
         working-directory: ./dad-birthday-backend
         run: |
-          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+          sam deploy \
+            --stack-name dad-birthday-backend \
+            --resolve-s3 \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --capabilities CAPABILITY_IAM \
             --parameter-overrides \
-              TableName=${{ secrets.DAD_TABLE_NAME }} \
-              MediaBucket=${{ secrets.DAD_MEDIA_BUCKET }} \
+              TableName=${{ needs.deploy-infra.outputs.table-name }} \
+              MediaBucket=${{ needs.deploy-infra.outputs.media-bucket }} \
               PartyCode=${{ secrets.DAD_PARTY_CODE }} \
               AdminCode=${{ secrets.DAD_ADMIN_CODE }} \
               JwtSecret=${{ secrets.DAD_JWT_SECRET }} \
               CloudFrontDomain=dad.melvinit.com
+
+  # ── Deploy Frontend ───────────────────────────────────────
+  deploy-frontend:
+    if: github.event_name == 'push'
+    needs: deploy-infra
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: aws s3 sync ./build/ s3://${{ needs.deploy-infra.outputs.site-bucket }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ needs.deploy-infra.outputs.distribution-id }} \
+            --paths "/*"
