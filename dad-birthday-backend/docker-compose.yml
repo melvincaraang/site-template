@@ -4,6 +4,4 @@ services:
     container_name: dad-birthday-dynamodb
     ports:
       - "8000:8000"
-    volumes:
-      - ./.dynamodb:/home/dynamodblocal/data
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"

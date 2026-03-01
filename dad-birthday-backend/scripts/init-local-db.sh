@@ -4,6 +4,14 @@ set -euo pipefail
 ENDPOINT="http://localhost:8000"
 TABLE_NAME="DadBirthdayTable"
 
+# Override any SSO/profile config — DynamoDB Local doesn't check credentials
+unset AWS_PROFILE 2>/dev/null || true
+export AWS_ACCESS_KEY_ID="local"
+export AWS_SECRET_ACCESS_KEY="local"
+export AWS_DEFAULT_REGION="us-east-1"
+
+echo "Checking for existing table '$TABLE_NAME'..."
+
 # Check if table already exists
 if aws dynamodb describe-table \
     --table-name "$TABLE_NAME" \
