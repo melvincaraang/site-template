@@ -4,7 +4,7 @@ version = 0.1
 stack_name = "dad-birthday-backend"
 
 [default.build.parameters]
-use_container = true
+use_container = false
 
 [default.deploy.parameters]
 resolve_s3 = true
