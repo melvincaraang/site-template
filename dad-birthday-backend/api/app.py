@@ -1,9 +1,11 @@
 import json
 import os
+import time
 from collections.abc import Mapping
 
-# Route table: (method, path_pattern) -> handler_function
-# Path patterns use {param} for path parameters
+import boto3
+
+from api import auth
 
 
 def lambda_handler(event: Mapping[str, object], context: object) -> dict[str, object]:
@@ -49,20 +51,244 @@ def lambda_handler(event: Mapping[str, object], context: object) -> dict[str, ob
         return _response(500, {"error": "Internal server error"})
 
 
+# --- Auth ---
+
+
 def handle_verify(event):
-    return _response(501, {"error": "Not implemented"})
+    body = _parse_body(event)
+    if body is None:
+        return _response(400, {"error": "Invalid JSON"})
+
+    code = body.get("code")
+    token = body.get("token")
+    is_admin = body.get("admin", False)
+
+    if not code and not token:
+        return _response(400, {"error": "Provide 'code' or 'token'"})
+
+    # Check admin code
+    if code and is_admin:
+        if code == os.environ["ADMIN_CODE"]:
+            jwt_token = auth.create_jwt("admin")
+            return _response(200, {"message": "Authenticated"}, {
+                "Set-Cookie": auth.make_session_cookie(jwt_token)
+            })
+        return _response(403, {"error": "Invalid admin code"})
+
+    # Check party code
+    if code:
+        if code == os.environ["PARTY_CODE"]:
+            jwt_token = auth.create_jwt("guest")
+            return _response(200, {"message": "Authenticated"}, {
+                "Set-Cookie": auth.make_session_cookie(jwt_token)
+            })
+        return _response(403, {"error": "Invalid code"})
+
+    # Check UUID token
+    if token:
+        table = auth.get_dynamodb_table()
+        result = table.get_item(Key={"PK": "TOKEN", "SK": f"TOKEN#{token}"})
+        item = result.get("Item")
+        if not item:
+            return _response(403, {"error": "Invalid token"})
+        if item.get("expiresAt", 0) < int(time.time()):
+            return _response(403, {"error": "Token expired"})
+        jwt_token = auth.create_jwt("guest")
+        return _response(200, {"message": "Authenticated"}, {
+            "Set-Cookie": auth.make_session_cookie(jwt_token)
+        })
+
+    return _response(400, {"error": "Provide 'code' or 'token'"})
 
 
-def handle_get_media(event):
-    return _response(501, {"error": "Not implemented"})
+# --- Messages ---
 
 
 def handle_get_messages(event):
-    return _response(501, {"error": "Not implemented"})
+    session = auth.require_auth(event)
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    table = auth.get_dynamodb_table()
+    result = table.query(
+        KeyConditionExpression="PK = :pk",
+        ExpressionAttributeValues={":pk": "MSG"},
+        ScanIndexForward=False,  # newest first
+    )
+    messages = [
+        {"id": item["SK"].split("#")[1], "author": item["author"], "text": item["text"], "createdAt": item["createdAt"]}
+        for item in result.get("Items", [])
+    ]
+    return _response(200, {"messages": messages})
 
 
 def handle_post_message(event):
-    return _response(501, {"error": "Not implemented"})
+    session = auth.require_auth(event)
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    body = _parse_body(event)
+    if not body or not body.get("author") or not body.get("text"):
+        return _response(400, {"error": "Provide 'author' and 'text'"})
+
+    import ulid as ulid_mod
+    from datetime import datetime, timezone
+
+    message_id = str(ulid_mod.new())
+    now = datetime.now(timezone.utc).isoformat()
+
+    table = auth.get_dynamodb_table()
+    table.put_item(Item={
+        "PK": "MSG",
+        "SK": f"MSG#{message_id}",
+        "author": body["author"],
+        "text": body["text"],
+        "createdAt": now,
+    })
+    return _response(201, {"id": message_id, "createdAt": now})
+
+
+# --- Media ---
+
+
+def handle_get_media(event):
+    session = auth.require_auth(event)
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    table = auth.get_dynamodb_table()
+    result = table.query(
+        KeyConditionExpression="PK = :pk",
+        ExpressionAttributeValues={":pk": "MEDIA"},
+    )
+    cf_domain = os.environ.get("CLOUDFRONT_DOMAIN", "dad.melvinit.com")
+    media = []
+    for item in sorted(result.get("Items", []), key=lambda x: x.get("order", 0)):
+        media.append({
+            "id": item["SK"].split("#")[1],
+            "url": f"https://{cf_domain}/media/{item['s3Key']}",
+            "type": item.get("type", "photo"),
+            "caption": item.get("caption", ""),
+            "order": item.get("order", 0),
+            "createdAt": item.get("createdAt", ""),
+        })
+    return _response(200, {"media": media})
+
+
+def handle_upload_url(event):
+    session = auth.require_auth(event, role="admin")
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    body = _parse_body(event)
+    if not body or not body.get("filename") or not body.get("contentType"):
+        return _response(400, {"error": "Provide 'filename' and 'contentType'"})
+
+    import ulid as ulid_mod
+
+    ext = body["filename"].rsplit(".", 1)[-1] if "." in body["filename"] else ""
+    s3_key = f"uploads/{ulid_mod.new()}.{ext}" if ext else f"uploads/{ulid_mod.new()}"
+
+    s3_client = boto3.client("s3")
+    presigned_url = s3_client.generate_presigned_url(
+        "put_object",
+        Params={
+            "Bucket": os.environ["MEDIA_BUCKET"],
+            "Key": s3_key,
+            "ContentType": body["contentType"],
+        },
+        ExpiresIn=3600,
+    )
+    return _response(200, {"uploadUrl": presigned_url, "s3Key": s3_key})
+
+
+def handle_post_media(event):
+    session = auth.require_auth(event, role="admin")
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    body = _parse_body(event)
+    if not body or not body.get("s3Key") or not body.get("type"):
+        return _response(400, {"error": "Provide 's3Key' and 'type'"})
+
+    import ulid as ulid_mod
+    from datetime import datetime, timezone
+
+    media_id = str(ulid_mod.new())
+    now = datetime.now(timezone.utc).isoformat()
+
+    table = auth.get_dynamodb_table()
+    table.put_item(Item={
+        "PK": "MEDIA",
+        "SK": f"MEDIA#{media_id}",
+        "s3Key": body["s3Key"],
+        "type": body["type"],
+        "caption": body.get("caption", ""),
+        "order": body.get("order", 0),
+        "createdAt": now,
+    })
+    return _response(201, {"id": media_id, "createdAt": now})
+
+
+def handle_delete_media(event):
+    session = auth.require_auth(event, role="admin")
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    path = event.get("path", "")
+    media_id = path.split("/")[-1]
+
+    table = auth.get_dynamodb_table()
+    result = table.get_item(Key={"PK": "MEDIA", "SK": f"MEDIA#{media_id}"})
+    item = result.get("Item")
+    if not item:
+        return _response(404, {"error": "Media not found"})
+
+    # Delete from S3
+    s3_client = boto3.client("s3")
+    s3_client.delete_object(Bucket=os.environ["MEDIA_BUCKET"], Key=item["s3Key"])
+
+    # Delete from DynamoDB
+    table.delete_item(Key={"PK": "MEDIA", "SK": f"MEDIA#{media_id}"})
+    return _response(200, {"message": "Deleted"})
+
+
+def handle_put_media(event):
+    session = auth.require_auth(event, role="admin")
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    path = event.get("path", "")
+    media_id = path.split("/")[-1]
+    body = _parse_body(event)
+    if not body:
+        return _response(400, {"error": "Invalid body"})
+
+    update_parts = []
+    values = {}
+    if "caption" in body:
+        update_parts.append("caption = :caption")
+        values[":caption"] = body["caption"]
+    if "order" in body:
+        update_parts.append("#ord = :order")
+        values[":order"] = body["order"]
+
+    if not update_parts:
+        return _response(400, {"error": "Nothing to update"})
+
+    table = auth.get_dynamodb_table()
+    kwargs = {
+        "Key": {"PK": "MEDIA", "SK": f"MEDIA#{media_id}"},
+        "UpdateExpression": "SET " + ", ".join(update_parts),
+        "ExpressionAttributeValues": values,
+    }
+    if "#ord" in str(update_parts):
+        kwargs["ExpressionAttributeNames"] = {"#ord": "order"}
+    table.update_item(**kwargs)
+    return _response(200, {"message": "Updated"})
+
+
+# --- Admin Tokens ---
 
 
 def handle_get_tokens(event):
@@ -77,20 +303,17 @@ def handle_delete_token(event):
     return _response(501, {"error": "Not implemented"})
 
 
-def handle_upload_url(event):
-    return _response(501, {"error": "Not implemented"})
+# --- Helpers ---
 
 
-def handle_post_media(event):
-    return _response(501, {"error": "Not implemented"})
-
-
-def handle_delete_media(event):
-    return _response(501, {"error": "Not implemented"})
-
-
-def handle_put_media(event):
-    return _response(501, {"error": "Not implemented"})
+def _parse_body(event) -> dict | None:
+    body = event.get("body", "{}")
+    if isinstance(body, str):
+        try:
+            return json.loads(body)
+        except json.JSONDecodeError:
+            return None
+    return body if isinstance(body, dict) else None
 
 
 def _response(status_code: int, body: dict, headers: dict | None = None) -> dict:

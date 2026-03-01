@@ -11,5 +11,5 @@ def test_unknown_route_returns_404(make_event):
 def test_verify_route_exists(make_event):
     event = make_event("POST", "/verify", body={"code": "test"})
     result = app.lambda_handler(event, None)
-    # 501 means routed correctly but not implemented yet
-    assert result["statusCode"] == 501
+    # Route exists — returns 403 for invalid code (not 404)
+    assert result["statusCode"] == 403
