@@ -1,0 +1,14 @@
+version = 0.1
+
+[default.global.parameters]
+stack_name = "dad-birthday-backend"
+
+[default.build.parameters]
+use_container = true
+
+[default.deploy.parameters]
+resolve_s3 = true
+region = "us-east-1"
+confirm_changeset = false
+fail_on_empty_changeset = false
+capabilities = "CAPABILITY_IAM"
