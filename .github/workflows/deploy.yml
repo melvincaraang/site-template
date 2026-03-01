@@ -1,0 +1,79 @@
+name: Deploy Birthday Tribute Site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: ./dad-birthday-frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./dad-birthday-frontend
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to S3
+        uses: reggionick/s3-deploy@v4
+        with:
+          folder: ./dad-birthday-frontend/build
+          bucket: ${{ secrets.DAD_S3_BUCKET_NAME }}
+          bucket-region: ${{ secrets.AWS_REGION }}
+          dist-id: ${{ secrets.DAD_CLOUDFRONT_DISTRIBUTION_ID }}
+          invalidation: /
+          delete-removed: true
+          private: true
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: aws-actions/setup-sam@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: SAM build
+        working-directory: ./dad-birthday-backend
+        run: sam build --use-container
+
+      - name: SAM deploy
+        working-directory: ./dad-birthday-backend
+        run: |
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              TableName=${{ secrets.DAD_TABLE_NAME }} \
+              MediaBucket=${{ secrets.DAD_MEDIA_BUCKET }} \
+              PartyCode=${{ secrets.DAD_PARTY_CODE }} \
+              AdminCode=${{ secrets.DAD_ADMIN_CODE }} \
+              JwtSecret=${{ secrets.DAD_JWT_SECRET }} \
+              CloudFrontDomain=dad.melvinit.com
