@@ -40,8 +40,8 @@ Resources:
   BirthdayApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: api/
-      Handler: app.lambda_handler
+      CodeUri: .
+      Handler: api.app.lambda_handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref TableName
