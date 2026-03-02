@@ -106,7 +106,7 @@ jobs:
       - name: CDK deploy
         working-directory: ./infra
         env:
-          CDK_DEFAULT_ACCOUNT: ${{ secrets.CDK_DEFAULT_ACCOUNT }}
+          CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
         run: |
           npx cdk deploy DadBirthdayStack \
             --require-approval never \
