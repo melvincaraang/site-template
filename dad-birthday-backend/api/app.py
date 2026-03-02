@@ -15,28 +15,28 @@ def lambda_handler(event: Mapping[str, object], context: object) -> dict[str, ob
 
     # Route to appropriate handler
     routes = {
-        ("POST", "/verify"): handle_verify,
-        ("GET", "/media"): handle_get_media,
-        ("GET", "/messages"): handle_get_messages,
-        ("POST", "/messages"): handle_post_message,
-        ("GET", "/admin/tokens"): handle_get_tokens,
-        ("POST", "/admin/tokens"): handle_post_token,
-        ("DELETE", "/admin/tokens"): handle_delete_token,
-        ("POST", "/admin/media/upload-url"): handle_upload_url,
-        ("POST", "/admin/media"): handle_post_media,
-        ("DELETE", "/admin/media"): handle_delete_media,
-        ("PUT", "/admin/media"): handle_put_media,
+        ("POST", "/api/verify"): handle_verify,
+        ("GET", "/api/media"): handle_get_media,
+        ("GET", "/api/messages"): handle_get_messages,
+        ("POST", "/api/messages"): handle_post_message,
+        ("GET", "/api/admin/tokens"): handle_get_tokens,
+        ("POST", "/api/admin/tokens"): handle_post_token,
+        ("DELETE", "/api/admin/tokens"): handle_delete_token,
+        ("POST", "/api/admin/media/upload-url"): handle_upload_url,
+        ("POST", "/api/admin/media"): handle_post_media,
+        ("DELETE", "/api/admin/media"): handle_delete_media,
+        ("PUT", "/api/admin/media"): handle_put_media,
     }
 
     # Normalize path: strip trailing slash, handle path parameters
     normalized = path.rstrip("/")
 
     # Check for path-parameter routes
-    if normalized.startswith("/admin/tokens/") and method == "DELETE":
+    if normalized.startswith("/api/admin/tokens/") and method == "DELETE":
         handler = handle_delete_token
-    elif normalized.startswith("/admin/media/") and method == "DELETE":
+    elif normalized.startswith("/api/admin/media/") and method == "DELETE":
         handler = handle_delete_media
-    elif normalized.startswith("/admin/media/") and method == "PUT":
+    elif normalized.startswith("/api/admin/media/") and method == "PUT":
         handler = handle_put_media
     else:
         handler = routes.get((method, normalized))

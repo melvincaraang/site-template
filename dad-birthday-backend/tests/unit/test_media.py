@@ -27,7 +27,7 @@ class TestGetMedia:
         }
         mock_get_table.return_value = mock_table
 
-        event = make_event("GET", "/media", headers={"Cookie": _auth_cookie()})
+        event = make_event("GET", "/api/media", headers={"Cookie": _auth_cookie()})
         result = app.lambda_handler(event, None)
 
         assert result["statusCode"] == 200
@@ -37,7 +37,7 @@ class TestGetMedia:
         assert "url" in data["media"][0]
 
     def test_unauthenticated_returns_401(self, make_event):
-        event = make_event("GET", "/media")
+        event = make_event("GET", "/api/media")
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 401
 
@@ -50,7 +50,7 @@ class TestAdminUploadUrl:
         mock_boto_client.return_value = mock_s3
 
         event = make_event(
-            "POST", "/admin/media/upload-url",
+            "POST", "/api/admin/media/upload-url",
             body={"filename": "photo.jpg", "contentType": "image/jpeg"},
             headers={"Cookie": _auth_cookie("admin")},
         )
@@ -63,7 +63,7 @@ class TestAdminUploadUrl:
 
     def test_guest_cannot_upload(self, make_event):
         event = make_event(
-            "POST", "/admin/media/upload-url",
+            "POST", "/api/admin/media/upload-url",
             body={"filename": "photo.jpg", "contentType": "image/jpeg"},
             headers={"Cookie": _auth_cookie("guest")},
         )
@@ -78,7 +78,7 @@ class TestAdminPostMedia:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "POST", "/admin/media",
+            "POST", "/api/admin/media",
             body={"s3Key": "photos/family.jpg", "type": "photo", "caption": "Family photo"},
             headers={"Cookie": _auth_cookie("admin")},
         )
@@ -101,7 +101,7 @@ class TestAdminDeleteMedia:
         mock_boto_client.return_value = mock_s3
 
         event = make_event(
-            "DELETE", "/admin/media/01ABC",
+            "DELETE", "/api/admin/media/01ABC",
             headers={"Cookie": _auth_cookie("admin")},
         )
         result = app.lambda_handler(event, None)

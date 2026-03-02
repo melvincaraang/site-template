@@ -27,7 +27,7 @@ class TestGetMessages:
         }
         mock_get_table.return_value = mock_table
 
-        event = make_event("GET", "/messages", headers={"Cookie": _auth_cookie()})
+        event = make_event("GET", "/api/messages", headers={"Cookie": _auth_cookie()})
         result = app.lambda_handler(event, None)
 
         assert result["statusCode"] == 200
@@ -36,7 +36,7 @@ class TestGetMessages:
         assert data["messages"][0]["author"] == "Alice"
 
     def test_unauthenticated_returns_401(self, make_event):
-        event = make_event("GET", "/messages")
+        event = make_event("GET", "/api/messages")
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 401
 
@@ -48,7 +48,7 @@ class TestPostMessage:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "POST", "/messages",
+            "POST", "/api/messages",
             body={"author": "Bob", "text": "Many happy returns!"},
             headers={"Cookie": _auth_cookie()},
         )
@@ -64,7 +64,7 @@ class TestPostMessage:
 
     def test_missing_fields_returns_400(self, make_event):
         event = make_event(
-            "POST", "/messages",
+            "POST", "/api/messages",
             body={"author": "Bob"},
             headers={"Cookie": _auth_cookie()},
         )

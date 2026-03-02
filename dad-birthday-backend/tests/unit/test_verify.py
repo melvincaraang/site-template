@@ -8,7 +8,7 @@ from api import app
 
 class TestVerifyWithPartyCode:
     def test_valid_party_code_returns_200_with_cookie(self, make_event):
-        event = make_event("POST", "/verify", body={"code": "dad80"})
+        event = make_event("POST", "/api/verify", body={"code": "dad80"})
         result = app.lambda_handler(event, None)
 
         assert result["statusCode"] == 200
@@ -21,19 +21,19 @@ class TestVerifyWithPartyCode:
         assert payload["role"] == "guest"
 
     def test_invalid_party_code_returns_403(self, make_event):
-        event = make_event("POST", "/verify", body={"code": "wrong"})
+        event = make_event("POST", "/api/verify", body={"code": "wrong"})
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 403
 
     def test_missing_code_returns_400(self, make_event):
-        event = make_event("POST", "/verify", body={})
+        event = make_event("POST", "/api/verify", body={})
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 400
 
 
 class TestVerifyWithAdminCode:
     def test_admin_code_returns_admin_role(self, make_event):
-        event = make_event("POST", "/verify", body={"code": "admin-secret", "admin": True})
+        event = make_event("POST", "/api/verify", body={"code": "admin-secret", "admin": True})
         result = app.lambda_handler(event, None)
 
         assert result["statusCode"] == 200
@@ -52,7 +52,7 @@ class TestVerifyWithUuidToken:
         }
         mock_get_table.return_value = mock_table
 
-        event = make_event("POST", "/verify", body={"token": "abc-123"})
+        event = make_event("POST", "/api/verify", body={"token": "abc-123"})
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 200
 
@@ -62,6 +62,6 @@ class TestVerifyWithUuidToken:
         mock_table.get_item.return_value = {}
         mock_get_table.return_value = mock_table
 
-        event = make_event("POST", "/verify", body={"token": "nonexistent"})
+        event = make_event("POST", "/api/verify", body={"token": "nonexistent"})
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 403

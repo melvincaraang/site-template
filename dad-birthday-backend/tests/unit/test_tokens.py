@@ -27,7 +27,7 @@ class TestGetTokens:
         }
         mock_get_table.return_value = mock_table
 
-        event = make_event("GET", "/admin/tokens", headers={"Cookie": _auth_cookie()})
+        event = make_event("GET", "/api/admin/tokens", headers={"Cookie": _auth_cookie()})
         result = app.lambda_handler(event, None)
 
         assert result["statusCode"] == 200
@@ -35,7 +35,7 @@ class TestGetTokens:
         assert len(data["tokens"]) == 1
 
     def test_guest_cannot_list_tokens(self, make_event):
-        event = make_event("GET", "/admin/tokens", headers={"Cookie": _auth_cookie("guest")})
+        event = make_event("GET", "/api/admin/tokens", headers={"Cookie": _auth_cookie("guest")})
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 401
 
@@ -47,7 +47,7 @@ class TestPostToken:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "POST", "/admin/tokens",
+            "POST", "/api/admin/tokens",
             body={"label": "For uncle Bob", "expiresInDays": 7},
             headers={"Cookie": _auth_cookie()},
         )
@@ -67,7 +67,7 @@ class TestDeleteToken:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "DELETE", "/admin/tokens/abc-123",
+            "DELETE", "/api/admin/tokens/abc-123",
             headers={"Cookie": _auth_cookie()},
         )
         result = app.lambda_handler(event, None)

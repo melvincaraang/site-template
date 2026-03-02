@@ -55,57 +55,57 @@ Resources:
         Verify:
           Type: Api
           Properties:
-            Path: /verify
+            Path: /api/verify
             Method: post
         GetMedia:
           Type: Api
           Properties:
-            Path: /media
+            Path: /api/media
             Method: get
         GetMessages:
           Type: Api
           Properties:
-            Path: /messages
+            Path: /api/messages
             Method: get
         PostMessage:
           Type: Api
           Properties:
-            Path: /messages
+            Path: /api/messages
             Method: post
         AdminGetTokens:
           Type: Api
           Properties:
-            Path: /admin/tokens
+            Path: /api/admin/tokens
             Method: get
         AdminPostToken:
           Type: Api
           Properties:
-            Path: /admin/tokens
+            Path: /api/admin/tokens
             Method: post
         AdminDeleteToken:
           Type: Api
           Properties:
-            Path: /admin/tokens/{uuid}
+            Path: /api/admin/tokens/{uuid}
             Method: delete
         AdminUploadUrl:
           Type: Api
           Properties:
-            Path: /admin/media/upload-url
+            Path: /api/admin/media/upload-url
             Method: post
         AdminPostMedia:
           Type: Api
           Properties:
-            Path: /admin/media
+            Path: /api/admin/media
             Method: post
         AdminDeleteMedia:
           Type: Api
           Properties:
-            Path: /admin/media/{id}
+            Path: /api/admin/media/{id}
             Method: delete
         AdminPutMedia:
           Type: Api
           Properties:
-            Path: /admin/media/{id}
+            Path: /api/admin/media/{id}
             Method: put
 
 Outputs:

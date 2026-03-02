@@ -8,10 +8,7 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	server: {
 		proxy: {
-			'/api': {
-				target: 'http://localhost:3000',
-				rewrite: (path) => path.replace(/^\/api/, '')
-			}
+			'/api': 'http://localhost:3000'
 		}
 	},
 	test: {
