@@ -9,8 +9,9 @@
 	let loading = $state(false);
 	let adminMode = $state(false);
 
-	// Check for token in URL on mount
+	// Landing page = logout + check for token
 	$effect(() => {
+		authState.role = null;
 		const token = $page.url.searchParams.get('token');
 		if (token) {
 			verifyToken(token);
