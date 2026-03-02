@@ -24,6 +24,7 @@ def lambda_handler(event: Mapping[str, object], context: object) -> dict[str, ob
     # Route to appropriate handler
     routes = {
         ("POST", "/api/verify"): handle_verify,
+        ("GET", "/api/session"): handle_get_session,
         ("GET", "/api/media"): handle_get_media,
         ("GET", "/api/messages"): handle_get_messages,
         ("POST", "/api/messages"): handle_post_message,
@@ -107,6 +108,13 @@ def handle_verify(event):
         })
 
     return _response(400, {"error": "Provide 'code' or 'token'"})
+
+
+def handle_get_session(event):
+    session = auth.get_session_from_event(event)
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+    return _response(200, {"role": session.get("role", "guest")})
 
 
 # --- Messages ---

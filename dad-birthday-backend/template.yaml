@@ -57,6 +57,11 @@ Resources:
           Properties:
             Path: /api/verify
             Method: post
+        GetSession:
+          Type: Api
+          Properties:
+            Path: /api/session
+            Method: get
         GetMedia:
           Type: Api
           Properties:

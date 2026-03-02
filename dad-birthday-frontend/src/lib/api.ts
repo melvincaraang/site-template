@@ -15,6 +15,8 @@ export const api = {
 	verify: (body: { code?: string; token?: string; admin?: boolean }) =>
 		request('/verify', { method: 'POST', body: JSON.stringify(body) }),
 
+	getSession: () => request('/session'),
+
 	getMedia: () => request('/media'),
 
 	getMessages: () => request('/messages'),
