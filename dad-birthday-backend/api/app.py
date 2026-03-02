@@ -87,7 +87,7 @@ def handle_verify(event):
 
     # Check party code
     if code:
-        if code == os.environ["PARTY_CODE"]:
+        if code.lower() == os.environ["PARTY_CODE"].lower():
             jwt_token = auth.create_jwt("guest")
             return _response(200, {"message": "Authenticated"}, {
                 "Set-Cookie": auth.make_session_cookie(jwt_token)
