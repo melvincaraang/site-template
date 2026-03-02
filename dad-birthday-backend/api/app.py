@@ -174,7 +174,7 @@ def handle_get_media(event):
     for item in sorted(result.get("Items", []), key=lambda x: x.get("order", 0)):
         media.append({
             "id": item["SK"].split("#")[1],
-            "url": f"https://{cf_domain}/media/{item['s3Key']}",
+            "url": f"https://{cf_domain}/{item['s3Key']}",
             "type": item.get("type", "photo"),
             "caption": item.get("caption", ""),
             "order": item.get("order", 0),
@@ -195,7 +195,7 @@ def handle_upload_url(event):
     import ulid as ulid_mod
 
     ext = body["filename"].rsplit(".", 1)[-1] if "." in body["filename"] else ""
-    s3_key = f"uploads/{ulid_mod.new()}.{ext}" if ext else f"uploads/{ulid_mod.new()}"
+    s3_key = f"media/{ulid_mod.new()}.{ext}" if ext else f"media/{ulid_mod.new()}"
 
     s3_client = boto3.client("s3")
     presigned_url = s3_client.generate_presigned_url(
