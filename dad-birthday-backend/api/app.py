@@ -25,6 +25,7 @@ def lambda_handler(event: Mapping[str, object], context: object) -> dict[str, ob
     routes = {
         ("POST", "/api/verify"): handle_verify,
         ("GET", "/api/session"): handle_get_session,
+        ("POST", "/api/logout"): handle_logout,
         ("GET", "/api/media"): handle_get_media,
         ("GET", "/api/messages"): handle_get_messages,
         ("POST", "/api/messages"): handle_post_message,
@@ -115,6 +116,12 @@ def handle_get_session(event):
     if not session:
         return _response(401, {"error": "Unauthorized"})
     return _response(200, {"role": session.get("role", "guest")})
+
+
+def handle_logout(event):
+    return _response(200, {"message": "Logged out"}, {
+        "Set-Cookie": "session=; HttpOnly; Secure; Path=/; Max-Age=0; SameSite=Strict"
+    })
 
 
 # --- Messages ---

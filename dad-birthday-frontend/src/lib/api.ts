@@ -17,6 +17,8 @@ export const api = {
 
 	getSession: () => request('/session'),
 
+	logout: () => request('/logout', { method: 'POST' }),
+
 	getMedia: () => request('/media'),
 
 	getMessages: () => request('/messages'),

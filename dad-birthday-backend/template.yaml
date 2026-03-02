@@ -62,6 +62,11 @@ Resources:
           Properties:
             Path: /api/session
             Method: get
+        Logout:
+          Type: Api
+          Properties:
+            Path: /api/logout
+            Method: post
         GetMedia:
           Type: Api
           Properties:

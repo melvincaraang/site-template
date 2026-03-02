@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import { authState } from '$lib/stores/auth.svelte';
 	import { goto } from '$app/navigation';
@@ -9,14 +10,16 @@
 	let loading = $state(false);
 	let adminMode = $state(false);
 
-	// Landing page = logout + check for token
-	$effect(() => {
+	// Landing page = logout: clear cookie + in-memory state
+	onMount(async () => {
 		authState.role = null;
+		authState.checking = false;
+		await api.logout().catch(() => {});
+
 		const token = $page.url.searchParams.get('token');
 		if (token) {
+			authState.checking = true;
 			verifyToken(token);
-		} else {
-			authState.checking = false;
 		}
 	});
 
