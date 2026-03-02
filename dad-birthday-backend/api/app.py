@@ -2,8 +2,16 @@ import json
 import os
 import time
 from collections.abc import Mapping
+from decimal import Decimal
 
 import boto3
+
+
+class _DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return int(o) if o == int(o) else float(o)
+        return super().default(o)
 
 from api import auth
 
@@ -382,5 +390,5 @@ def _response(status_code: int, body: dict, headers: dict | None = None) -> dict
     return {
         "statusCode": status_code,
         "headers": resp_headers,
-        "body": json.dumps(body),
+        "body": json.dumps(body, cls=_DecimalEncoder),
     }
