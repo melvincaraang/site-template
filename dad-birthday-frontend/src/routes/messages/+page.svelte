@@ -49,6 +49,25 @@
 <div class="mx-auto max-w-3xl px-4 py-8">
 	<h1 class="font-display text-brown mb-8 text-center text-4xl">Birthday Wishes</h1>
 
+	<!-- Gallery link banner -->
+	<a
+		href="/gallery"
+		class="border-gold/40 bg-cream-dark/80 text-brown hover:bg-gold/20 mb-8 flex items-center justify-center gap-3 rounded-lg border px-5 py-4 transition-colors"
+	>
+		<svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				stroke-width="2"
+				d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+			/>
+		</svg>
+		<span class="font-display text-lg">View the Photo Gallery</span>
+		<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+		</svg>
+	</a>
+
 	<!-- Message form -->
 	<div class="border-gold/30 mb-10 rounded-lg border bg-white/80 p-6 shadow-md">
 		<h2 class="font-display text-brown mb-4 text-2xl">Leave a Message</h2>
