@@ -27,7 +27,7 @@
 		try {
 			await api.verify({ token });
 			authState.role = 'guest';
-			goto('/gallery');
+			goto('/messages');
 		} catch {
 			authState.checking = false;
 			error = 'This link has expired or is invalid.';
@@ -41,7 +41,7 @@
 		try {
 			await api.verify({ code: code.trim(), admin: adminMode });
 			authState.role = adminMode ? 'admin' : 'guest';
-			goto(adminMode ? '/admin' : '/gallery');
+			goto(adminMode ? '/admin' : '/messages');
 		} catch {
 			error = adminMode ? 'Invalid admin code.' : 'Invalid code. Please try again.';
 		} finally {
