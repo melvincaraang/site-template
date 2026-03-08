@@ -11,19 +11,19 @@
 
 <nav class="border-gold/20 bg-cream/90 border-b backdrop-blur-sm">
 	<div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-		<a href="/gallery" class="font-display text-brown text-xl font-bold"> Dad's 80th </a>
+		<a href="/messages" class="font-display text-brown text-xl font-bold"> Dad's 80th </a>
 
 		<!-- Desktop nav -->
 		<div class="hidden gap-6 sm:flex">
 			<a
-				href="/gallery"
-				class="text-brown hover:text-gold transition-colors"
-				class:font-bold={isActive('/gallery')}>Gallery</a
-			>
-			<a
 				href="/messages"
 				class="text-brown hover:text-gold transition-colors"
 				class:font-bold={isActive('/messages')}>Messages</a
+			>
+			<a
+				href="/gallery"
+				class="text-brown hover:text-gold transition-colors"
+				class:font-bold={isActive('/gallery')}>Gallery</a
 			>
 			{#if authState.role === 'admin'}
 				<a
@@ -59,10 +59,10 @@
 	<!-- Mobile menu -->
 	{#if menuOpen}
 		<div class="border-gold/20 border-t px-4 pb-3 sm:hidden">
-			<a href="/gallery" class="text-brown block py-2" onclick={() => (menuOpen = false)}>Gallery</a
-			>
 			<a href="/messages" class="text-brown block py-2" onclick={() => (menuOpen = false)}
 				>Messages</a
+			>
+			<a href="/gallery" class="text-brown block py-2" onclick={() => (menuOpen = false)}>Gallery</a
 			>
 			{#if authState.role === 'admin'}
 				<a href="/admin" class="text-gold block py-2" onclick={() => (menuOpen = false)}>Admin</a>
