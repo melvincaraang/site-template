@@ -28,6 +28,7 @@
 	async function handleSubmit() {
 		if (!author.trim() || !text.trim()) return;
 		submitting = true;
+		error = '';
 		try {
 			await api.postMessage(author.trim(), text.trim());
 			// Refresh messages
