@@ -36,8 +36,8 @@
 		</div>
 
 		<!-- Mobile hamburger -->
-		<button class="text-brown sm:hidden" onclick={() => (menuOpen = !menuOpen)}>
-			<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<button class="text-brown p-2 sm:hidden" onclick={() => (menuOpen = !menuOpen)}>
+			<svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				{#if menuOpen}
 					<path
 						stroke-linecap="round"
