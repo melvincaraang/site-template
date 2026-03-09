@@ -38,7 +38,7 @@
 			text = '';
 			submitted = true;
 			error = '';
-			setTimeout(() => (submitted = false), 3000);
+			setTimeout(() => (submitted = false), 5000);
 		} catch (e) {
 			console.error('Failed to post message', e);
 			error = 'Something went wrong. Please try again.';
@@ -78,20 +78,27 @@
 	<div class="border-gold/30 mb-10 rounded-lg border bg-white/80 p-6 shadow-md">
 		<h2 class="font-display text-brown mb-4 text-2xl">Leave a Message</h2>
 		<form onsubmit={handleSubmit} class="space-y-4">
-			<input
-				type="text"
-				bind:value={author}
-				placeholder="Your name"
-				class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold bg-cream/50 w-full rounded-md border px-4 py-2"
-				maxlength="100"
-			/>
-			<textarea
-				bind:value={text}
-				placeholder="Write your birthday message..."
-				rows="4"
-				class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold bg-cream/50 w-full rounded-md border px-4 py-2"
-				maxlength="1000"
-			></textarea>
+			<div>
+				<label for="author" class="text-brown mb-1 block text-sm font-medium">Your name</label>
+				<input
+					id="author"
+					type="text"
+					bind:value={author}
+					class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold bg-cream/50 w-full rounded-md border px-4 py-2"
+					maxlength="100"
+				/>
+			</div>
+			<div>
+				<label for="message" class="text-brown mb-1 block text-sm font-medium">Your message</label>
+				<textarea
+					id="message"
+					bind:value={text}
+					placeholder="Write your birthday message..."
+					rows="4"
+					class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold bg-cream/50 w-full rounded-md border px-4 py-2"
+					maxlength="1000"
+				></textarea>
+			</div>
 			<button
 				type="submit"
 				disabled={submitting || !author.trim() || !text.trim()}
@@ -122,6 +129,13 @@
 					<p class="font-handwriting text-brown text-xl leading-relaxed">{msg.text}</p>
 					<p class="text-brown-light mt-3 text-sm">
 						&mdash; {msg.author}
+						<span class="text-brown-light/60 ml-2">
+							{new Date(msg.createdAt).toLocaleDateString('en-US', {
+								month: 'long',
+								day: 'numeric',
+								year: 'numeric'
+							})}
+						</span>
 					</p>
 				</div>
 			{/each}
