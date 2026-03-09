@@ -341,14 +341,14 @@ def handle_post_token(event):
     if not session:
         return _response(401, {"error": "Unauthorized"})
 
-    import uuid
+    import secrets
     from datetime import datetime, timezone
 
     body = _parse_body(event)
     label = body.get("label", "") if body else ""
     expires_in_days = body.get("expiresInDays", 7) if body else 7
 
-    token_uuid = str(uuid.uuid4())
+    token_uuid = secrets.token_hex(4)
     now = datetime.now(timezone.utc).isoformat()
     expires_at = int(time.time()) + (expires_in_days * 86400)
 

@@ -56,7 +56,9 @@ class TestPostToken:
         assert result["statusCode"] == 201
         data = json.loads(result["body"])
         assert "uuid" in data
+        assert len(data["uuid"]) == 8
         assert "url" in data
+        assert f"?token={data['uuid']}" in data["url"]
         mock_table.put_item.assert_called_once()
 
 
