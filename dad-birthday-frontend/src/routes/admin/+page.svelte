@@ -102,6 +102,30 @@
 		}
 	}
 
+	// Caption editing state
+	let editingMediaId = $state('');
+	let editingCaption = $state('');
+
+	function startEditCaption(item: MediaItem) {
+		editingMediaId = item.id;
+		editingCaption = item.caption;
+	}
+
+	async function saveCaption(id: string) {
+		try {
+			await api.updateMedia(id, { caption: editingCaption });
+			const item = media.find((m) => m.id === id);
+			if (item) item.caption = editingCaption;
+		} catch (e) {
+			console.error('Failed to update caption', e);
+		}
+		editingMediaId = '';
+	}
+
+	function cancelEditCaption() {
+		editingMediaId = '';
+	}
+
 	let copiedUuid = $state('');
 
 	async function handleCopyLink(uuid: string) {
@@ -187,7 +211,26 @@
 						/>
 					{/if}
 					<div class="flex-1">
-						<p class="text-brown text-sm">{item.caption || '(no caption)'}</p>
+						{#if editingMediaId === item.id}
+							<input
+								type="text"
+								bind:value={editingCaption}
+								onblur={() => saveCaption(item.id)}
+								onkeydown={(e) => {
+									if (e.key === 'Enter') e.currentTarget.blur();
+									if (e.key === 'Escape') cancelEditCaption();
+								}}
+								class="border-gold/40 text-brown w-full rounded border px-2 py-1 text-sm"
+								autofocus
+							/>
+						{:else}
+							<button
+								onclick={() => startEditCaption(item)}
+								class="text-brown cursor-pointer text-left text-sm underline decoration-dotted underline-offset-2 hover:decoration-solid"
+							>
+								{item.caption || '(no caption)'}
+							</button>
+						{/if}
 					</div>
 					<button
 						class="text-sm text-red-600 hover:text-red-800"
