@@ -45,6 +45,8 @@ def lambda_handler(event: Mapping[str, object], context: object) -> dict[str, ob
     # Check for path-parameter routes
     if normalized.startswith("/api/admin/tokens/") and method == "DELETE":
         handler = handle_delete_token
+    elif normalized.startswith("/api/messages/") and method == "DELETE":
+        handler = handle_delete_message
     elif normalized.startswith("/api/admin/media/") and method == "DELETE":
         handler = handle_delete_media
     elif normalized.startswith("/api/admin/media/") and method == "PUT":
@@ -209,6 +211,19 @@ def handle_message_upload_url(event):
         ExpiresIn=3600,
     )
     return _response(200, {"uploadUrl": presigned_url, "s3Key": s3_key})
+
+
+def handle_delete_message(event):
+    session = auth.require_auth(event, role="admin")
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    path = event.get("path", "")
+    message_id = path.split("/")[-1]
+
+    table = auth.get_dynamodb_table()
+    table.delete_item(Key={"PK": "MSG", "SK": f"MSG#{message_id}"})
+    return _response(200, {"message": "Deleted"})
 
 
 # --- Media ---

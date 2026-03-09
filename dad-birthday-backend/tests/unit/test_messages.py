@@ -116,3 +116,29 @@ class TestMessageUploadUrl:
         )
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 401
+
+
+class TestDeleteMessage:
+    @patch("api.auth.get_dynamodb_table")
+    def test_admin_can_delete_message(self, mock_get_table, make_event):
+        mock_table = MagicMock()
+        mock_get_table.return_value = mock_table
+
+        event = make_event(
+            "DELETE", "/api/messages/msg-123",
+            headers={"Cookie": _auth_cookie("admin")},
+        )
+        result = app.lambda_handler(event, None)
+
+        assert result["statusCode"] == 200
+        mock_table.delete_item.assert_called_once_with(
+            Key={"PK": "MSG", "SK": "MSG#msg-123"}
+        )
+
+    def test_guest_cannot_delete_message(self, make_event):
+        event = make_event(
+            "DELETE", "/api/messages/msg-123",
+            headers={"Cookie": _auth_cookie("guest")},
+        )
+        result = app.lambda_handler(event, None)
+        assert result["statusCode"] == 401

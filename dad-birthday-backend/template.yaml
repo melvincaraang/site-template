@@ -87,6 +87,11 @@ Resources:
           Properties:
             Path: /api/messages/upload-url
             Method: post
+        DeleteMessage:
+          Type: Api
+          Properties:
+            Path: /api/messages/{id}
+            Method: delete
         AdminGetTokens:
           Type: Api
           Properties:
