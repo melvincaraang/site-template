@@ -70,3 +70,32 @@ class TestPostMessage:
         )
         result = app.lambda_handler(event, None)
         assert result["statusCode"] == 400
+
+
+class TestMessageUploadUrl:
+    @patch("boto3.client")
+    def test_guest_can_get_upload_url(self, mock_boto, make_event):
+        mock_s3 = MagicMock()
+        mock_s3.generate_presigned_url.return_value = "https://s3.example.com/presigned"
+        mock_boto.return_value = mock_s3
+
+        event = make_event(
+            "POST", "/api/messages/upload-url",
+            body={"filename": "selfie.jpg", "contentType": "image/jpeg"},
+            headers={"Cookie": _auth_cookie("guest")},
+        )
+        result = app.lambda_handler(event, None)
+
+        assert result["statusCode"] == 200
+        data = json.loads(result["body"])
+        assert "uploadUrl" in data
+        assert "s3Key" in data
+        assert data["s3Key"].startswith("message-photos/")
+
+    def test_unauthenticated_returns_401(self, make_event):
+        event = make_event(
+            "POST", "/api/messages/upload-url",
+            body={"filename": "selfie.jpg", "contentType": "image/jpeg"},
+        )
+        result = app.lambda_handler(event, None)
+        assert result["statusCode"] == 401
