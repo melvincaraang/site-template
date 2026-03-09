@@ -23,8 +23,19 @@ export const api = {
 
 	getMessages: () => request('/messages'),
 
-	postMessage: (author: string, text: string) =>
-		request('/messages', { method: 'POST', body: JSON.stringify({ author, text }) }),
+	postMessage: (author: string, text: string, photoKey?: string) =>
+		request('/messages', {
+			method: 'POST',
+			body: JSON.stringify({ author, text, ...(photoKey && { photoKey }) })
+		}),
+
+	getMessageUploadUrl: (filename: string, contentType: string) =>
+		request('/messages/upload-url', {
+			method: 'POST',
+			body: JSON.stringify({ filename, contentType })
+		}),
+
+	deleteMessage: (id: string) => request(`/messages/${id}`, { method: 'DELETE' }),
 
 	getTokens: () => request('/admin/tokens'),
 
