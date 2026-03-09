@@ -101,6 +101,15 @@
 			console.error('Token deletion failed', e);
 		}
 	}
+
+	let copiedUuid = $state('');
+
+	async function handleCopyLink(uuid: string) {
+		const url = `https://dad.melvinit.com/?token=${uuid}`;
+		await navigator.clipboard.writeText(url);
+		copiedUuid = uuid;
+		setTimeout(() => (copiedUuid = ''), 2000);
+	}
 </script>
 
 <svelte:head>
@@ -238,9 +247,17 @@
 							onclick={() => handleDeleteToken(token.uuid)}>Revoke</button
 						>
 					</div>
-					<p class="bg-cream/50 mt-2 rounded p-2 text-xs break-all">
-						https://dad.melvinit.com/?token={token.uuid}
-					</p>
+					<div class="bg-cream/50 mt-2 flex items-center gap-2 rounded p-2">
+						<p class="flex-1 text-xs break-all">
+							https://dad.melvinit.com/?token={token.uuid}
+						</p>
+						<button
+							onclick={() => handleCopyLink(token.uuid)}
+							class="bg-brown hover:bg-brown-light text-cream shrink-0 rounded px-3 py-1 text-xs transition-colors"
+						>
+							{copiedUuid === token.uuid ? 'Copied!' : 'Copy'}
+						</button>
+					</div>
 				</div>
 			{/each}
 		</div>
