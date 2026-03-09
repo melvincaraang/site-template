@@ -28,6 +28,25 @@
 <div class="mx-auto max-w-6xl px-4 py-8">
 	<h1 class="font-display text-brown mb-8 text-center text-4xl">Memories</h1>
 
+	<!-- Messages link banner -->
+	<a
+		href="/messages"
+		class="border-gold/40 bg-cream-dark/80 text-brown hover:bg-gold/20 mb-8 flex items-center justify-center gap-3 rounded-lg border px-5 py-4 transition-colors"
+	>
+		<svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				stroke-width="2"
+				d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+			/>
+		</svg>
+		<span class="font-display text-lg">Leave a Birthday Message</span>
+		<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+		</svg>
+	</a>
+
 	{#if loading}
 		<p class="text-brown-light text-center text-lg italic">Loading memories...</p>
 	{:else if media.length === 0}
