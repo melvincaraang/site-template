@@ -10,6 +10,8 @@
 	let text = $state('');
 	let submitting = $state(false);
 	let submitted = $state(false);
+	let error = $state('');
+	let loadError = $state('');
 
 	onMount(async () => {
 		try {
@@ -17,6 +19,7 @@
 			messages = data.messages;
 		} catch (e) {
 			console.error('Failed to load messages', e);
+			loadError = 'Could not load messages. Please refresh the page.';
 		} finally {
 			loading = false;
 		}
@@ -33,9 +36,11 @@
 			author = '';
 			text = '';
 			submitted = true;
+			error = '';
 			setTimeout(() => (submitted = false), 3000);
 		} catch (e) {
 			console.error('Failed to post message', e);
+			error = 'Something went wrong. Please try again.';
 		} finally {
 			submitting = false;
 		}
@@ -96,12 +101,17 @@
 			{#if submitted}
 				<p class="text-gold text-sm">Thank you for your message!</p>
 			{/if}
+			{#if error}
+				<p class="text-sm text-red-600">{error}</p>
+			{/if}
 		</form>
 	</div>
 
 	<!-- Message wall -->
 	{#if loading}
 		<p class="text-brown-light text-center italic">Loading messages...</p>
+	{:else if loadError}
+		<p class="text-center text-red-600">{loadError}</p>
 	{:else if messages.length === 0}
 		<p class="text-brown-light text-center">No messages yet. Be the first!</p>
 	{:else}
