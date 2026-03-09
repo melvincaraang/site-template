@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
+	import Lightbox from '$lib/components/Lightbox.svelte';
+	import { authState } from '$lib/stores/auth.svelte';
 
 	type Message = { id: string; author: string; text: string; createdAt: string; photoUrl?: string };
 
@@ -15,6 +17,16 @@
 	let photoFile = $state<File | null>(null);
 	let photoPreview = $state('');
 	let fileInput = $state<HTMLInputElement | null>(null);
+	let lightboxUrl = $state('');
+
+	async function handleDeleteMessage(id: string) {
+		try {
+			await api.deleteMessage(id);
+			messages = messages.filter((m) => m.id !== id);
+		} catch (e) {
+			console.error('Failed to delete message', e);
+		}
+	}
 
 	function handlePhotoSelect(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
@@ -202,18 +214,42 @@
 			{#each messages as msg (msg.id)}
 				<div class="border-gold/20 rounded-lg border bg-white/70 p-5 shadow-sm">
 					<p class="font-handwriting text-brown text-xl leading-relaxed">{msg.text}</p>
-					<p class="text-brown-light mt-3 text-sm">
-						&mdash; {msg.author}
-						<span class="text-brown-light/60 ml-2">
-							{new Date(msg.createdAt).toLocaleDateString('en-US', {
-								month: 'long',
-								day: 'numeric',
-								year: 'numeric'
-							})}
-						</span>
-					</p>
+					<div class="mt-3 flex items-center gap-3">
+						{#if msg.photoUrl}
+							<button onclick={() => (lightboxUrl = msg.photoUrl || '')}>
+								<img
+									src={msg.photoUrl}
+									alt="{msg.author}'s photo"
+									class="border-gold/30 hover:border-gold h-10 w-10 rounded-full border-2 object-cover transition-colors"
+								/>
+							</button>
+						{/if}
+						<p class="text-brown-light text-sm">
+							&mdash; {msg.author}
+							<span class="text-brown-light/60 ml-2">
+								{new Date(msg.createdAt).toLocaleDateString('en-US', {
+									month: 'long',
+									day: 'numeric',
+									year: 'numeric'
+								})}
+							</span>
+						</p>
+						{#if authState.role === 'admin'}
+							<button
+								onclick={() => handleDeleteMessage(msg.id)}
+								class="ml-auto text-xs text-red-600 hover:text-red-800">Delete</button
+							>
+						{/if}
+					</div>
 				</div>
 			{/each}
 		</div>
 	{/if}
 </div>
+
+{#if lightboxUrl}
+	<Lightbox
+		item={{ id: '', url: lightboxUrl, type: 'photo', caption: '' }}
+		onclose={() => (lightboxUrl = '')}
+	/>
+{/if}
