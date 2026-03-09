@@ -126,6 +126,38 @@
 		editingMediaId = '';
 	}
 
+	// Reorder functions
+	async function moveMedia(index: number, target: 'up' | 'down' | 'top' | 'bottom') {
+		const items = [...media];
+		const item = items[index];
+
+		// Remove item from current position
+		items.splice(index, 1);
+
+		// Insert at new position
+		if (target === 'top') items.unshift(item);
+		else if (target === 'bottom') items.push(item);
+		else if (target === 'up') items.splice(index - 1, 0, item);
+		else items.splice(index + 1, 0, item);
+
+		// Reassign order values and update local state
+		const updates: Promise<unknown>[] = [];
+		items.forEach((m, i) => {
+			if (m.order !== i) {
+				m.order = i;
+				updates.push(api.updateMedia(m.id, { order: i }));
+			}
+		});
+		media = items;
+
+		try {
+			await Promise.all(updates);
+		} catch (e) {
+			console.error('Failed to reorder', e);
+			await loadData();
+		}
+	}
+
 	let copiedUuid = $state('');
 
 	async function handleCopyLink(uuid: string) {
@@ -195,8 +227,8 @@
 
 		<!-- Media list -->
 		<div class="space-y-3">
-			{#each media as item (item.id)}
-				<div class="border-gold/20 flex items-center gap-4 rounded-lg border bg-white/70 p-3">
+			{#each media as item, index (item.id)}
+				<div class="border-gold/20 flex items-center gap-3 rounded-lg border bg-white/70 p-3">
 					{#if item.type === 'video'}
 						<div
 							class="bg-brown-light/20 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded"
@@ -231,6 +263,68 @@
 								{item.caption || '(no caption)'}
 							</button>
 						{/if}
+					</div>
+					<div class="flex flex-col gap-0.5">
+						<button
+							disabled={index === 0}
+							onclick={() => moveMedia(index, 'top')}
+							class="text-brown-light hover:text-brown p-0.5 disabled:opacity-20"
+							title="Move to top"
+						>
+							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M5 11l7-7 7 7M5 19l7-7 7 7"
+								/>
+							</svg>
+						</button>
+						<button
+							disabled={index === 0}
+							onclick={() => moveMedia(index, 'up')}
+							class="text-brown-light hover:text-brown p-0.5 disabled:opacity-20"
+							title="Move up"
+						>
+							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M5 15l7-7 7 7"
+								/>
+							</svg>
+						</button>
+						<button
+							disabled={index === media.length - 1}
+							onclick={() => moveMedia(index, 'down')}
+							class="text-brown-light hover:text-brown p-0.5 disabled:opacity-20"
+							title="Move down"
+						>
+							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M19 9l-7 7-7-7"
+								/>
+							</svg>
+						</button>
+						<button
+							disabled={index === media.length - 1}
+							onclick={() => moveMedia(index, 'bottom')}
+							class="text-brown-light hover:text-brown p-0.5 disabled:opacity-20"
+							title="Move to bottom"
+						>
+							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M19 5l-7 7-7-7M19 13l-7 7-7-7"
+								/>
+							</svg>
+						</button>
 					</div>
 					<button
 						class="text-sm text-red-600 hover:text-red-800"
