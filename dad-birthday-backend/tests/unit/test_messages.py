@@ -22,7 +22,7 @@ class TestGetMessages:
         mock_table = MagicMock()
         mock_table.query.return_value = {
             "Items": [
-                {"PK": "MSG", "SK": "MSG#01ABC", "author": "Alice", "text": "Happy birthday!", "createdAt": "2026-03-01T12:00:00Z"},
+                {"PK": "MSG", "SK": "MSG#01ABC", "author": "Alice", "text": "Happy birthday!", "createdAt": "2026-03-01T12:00:00Z", "photoKey": "message-photos/photo1.jpg"},
             ]
         }
         mock_get_table.return_value = mock_table
@@ -34,6 +34,7 @@ class TestGetMessages:
         data = json.loads(result["body"])
         assert len(data["messages"]) == 1
         assert data["messages"][0]["author"] == "Alice"
+        assert data["messages"][0]["photoUrl"] == "https://dad.melvinit.com/message-photos/photo1.jpg"
 
     def test_unauthenticated_returns_401(self, make_event):
         event = make_event("GET", "/api/messages")
@@ -61,6 +62,22 @@ class TestPostMessage:
         assert item["text"] == "Many happy returns!"
         assert item["PK"] == "MSG"
         assert item["SK"].startswith("MSG#")
+
+    @patch("api.auth.get_dynamodb_table")
+    def test_creates_message_with_photo(self, mock_get_table, make_event):
+        mock_table = MagicMock()
+        mock_get_table.return_value = mock_table
+
+        event = make_event(
+            "POST", "/api/messages",
+            body={"author": "Carol", "text": "Cheers!", "photoKey": "message-photos/abc123.jpg"},
+            headers={"Cookie": _auth_cookie()},
+        )
+        result = app.lambda_handler(event, None)
+
+        assert result["statusCode"] == 201
+        item = mock_table.put_item.call_args[1]["Item"]
+        assert item["photoKey"] == "message-photos/abc123.jpg"
 
     def test_missing_fields_returns_400(self, make_event):
         event = make_event(

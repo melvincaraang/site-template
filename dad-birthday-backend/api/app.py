@@ -139,10 +139,18 @@ def handle_get_messages(event):
         ExpressionAttributeValues={":pk": "MSG"},
         ScanIndexForward=False,  # newest first
     )
-    messages = [
-        {"id": item["SK"].split("#")[1], "author": item["author"], "text": item["text"], "createdAt": item["createdAt"]}
-        for item in result.get("Items", [])
-    ]
+    cf_domain = os.environ.get("CLOUDFRONT_DOMAIN", "dad.melvinit.com")
+    messages = []
+    for item in result.get("Items", []):
+        msg = {
+            "id": item["SK"].split("#")[1],
+            "author": item["author"],
+            "text": item["text"],
+            "createdAt": item["createdAt"],
+        }
+        if item.get("photoKey"):
+            msg["photoUrl"] = f"https://{cf_domain}/{item['photoKey']}"
+        messages.append(msg)
     return _response(200, {"messages": messages})
 
 
@@ -161,14 +169,18 @@ def handle_post_message(event):
     message_id = str(ulid_mod.new())
     now = datetime.now(timezone.utc).isoformat()
 
-    table = auth.get_dynamodb_table()
-    table.put_item(Item={
+    item = {
         "PK": "MSG",
         "SK": f"MSG#{message_id}",
         "author": body["author"],
         "text": body["text"],
         "createdAt": now,
-    })
+    }
+    if body.get("photoKey"):
+        item["photoKey"] = body["photoKey"]
+
+    table = auth.get_dynamodb_table()
+    table.put_item(Item=item)
     return _response(201, {"id": message_id, "createdAt": now})
 
 
