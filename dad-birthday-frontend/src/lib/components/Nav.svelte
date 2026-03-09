@@ -32,6 +32,7 @@
 					class:font-bold={isActive('/admin')}>Admin</a
 				>
 			{/if}
+			<a href="/" class="text-brown-light/60 hover:text-brown transition-colors">Logout</a>
 		</div>
 
 		<!-- Mobile hamburger -->
@@ -67,6 +68,9 @@
 			{#if authState.role === 'admin'}
 				<a href="/admin" class="text-gold block py-2" onclick={() => (menuOpen = false)}>Admin</a>
 			{/if}
+			<a href="/" class="text-brown-light/60 block py-2" onclick={() => (menuOpen = false)}
+				>Logout</a
+			>
 		</div>
 	{/if}
 </nav>
