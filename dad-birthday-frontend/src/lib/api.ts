@@ -42,10 +42,10 @@ export const api = {
 			body: JSON.stringify({ filename, contentType })
 		}),
 
-	saveMedia: (s3Key: string, type: string, caption: string) =>
+	saveMedia: (s3Key: string, type: string, caption: string, order?: number) =>
 		request('/admin/media', {
 			method: 'POST',
-			body: JSON.stringify({ s3Key, type, caption })
+			body: JSON.stringify({ s3Key, type, caption, order })
 		}),
 
 	deleteMedia: (id: string) => request(`/admin/media/${id}`, { method: 'DELETE' }),

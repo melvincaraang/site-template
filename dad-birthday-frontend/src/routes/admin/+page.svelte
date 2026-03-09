@@ -47,6 +47,7 @@
 		if (!uploadFiles || uploadFiles.length === 0) return;
 		uploading = true;
 		try {
+			let nextOrder = media.length > 0 ? Math.max(...media.map((m) => m.order)) + 1 : 0;
 			for (const file of uploadFiles) {
 				const isVideo = file.type.startsWith('video/');
 				// Get pre-signed URL
@@ -58,7 +59,7 @@
 					headers: { 'Content-Type': file.type }
 				});
 				// Save metadata
-				await api.saveMedia(s3Key, isVideo ? 'video' : 'photo', uploadCaption);
+				await api.saveMedia(s3Key, isVideo ? 'video' : 'photo', uploadCaption, nextOrder++);
 			}
 			uploadCaption = '';
 			uploadFiles = null;
