@@ -29,6 +29,7 @@ def lambda_handler(event: Mapping[str, object], context: object) -> dict[str, ob
         ("GET", "/api/media"): handle_get_media,
         ("GET", "/api/messages"): handle_get_messages,
         ("POST", "/api/messages"): handle_post_message,
+        ("POST", "/api/messages/upload-url"): handle_message_upload_url,
         ("GET", "/api/admin/tokens"): handle_get_tokens,
         ("POST", "/api/admin/tokens"): handle_post_token,
         ("DELETE", "/api/admin/tokens"): handle_delete_token,
@@ -44,6 +45,8 @@ def lambda_handler(event: Mapping[str, object], context: object) -> dict[str, ob
     # Check for path-parameter routes
     if normalized.startswith("/api/admin/tokens/") and method == "DELETE":
         handler = handle_delete_token
+    elif normalized.startswith("/api/messages/") and method == "DELETE":
+        handler = handle_delete_message
     elif normalized.startswith("/api/admin/media/") and method == "DELETE":
         handler = handle_delete_media
     elif normalized.startswith("/api/admin/media/") and method == "PUT":
@@ -138,10 +141,18 @@ def handle_get_messages(event):
         ExpressionAttributeValues={":pk": "MSG"},
         ScanIndexForward=False,  # newest first
     )
-    messages = [
-        {"id": item["SK"].split("#")[1], "author": item["author"], "text": item["text"], "createdAt": item["createdAt"]}
-        for item in result.get("Items", [])
-    ]
+    cf_domain = os.environ.get("CLOUDFRONT_DOMAIN", "dad.melvinit.com")
+    messages = []
+    for item in result.get("Items", []):
+        msg = {
+            "id": item["SK"].split("#")[1],
+            "author": item["author"],
+            "text": item["text"],
+            "createdAt": item["createdAt"],
+        }
+        if item.get("photoKey"):
+            msg["photoUrl"] = f"https://{cf_domain}/{item['photoKey']}"
+        messages.append(msg)
     return _response(200, {"messages": messages})
 
 
@@ -160,15 +171,59 @@ def handle_post_message(event):
     message_id = str(ulid_mod.new())
     now = datetime.now(timezone.utc).isoformat()
 
-    table = auth.get_dynamodb_table()
-    table.put_item(Item={
+    item = {
         "PK": "MSG",
         "SK": f"MSG#{message_id}",
         "author": body["author"],
         "text": body["text"],
         "createdAt": now,
-    })
+    }
+    if body.get("photoKey"):
+        item["photoKey"] = body["photoKey"]
+
+    table = auth.get_dynamodb_table()
+    table.put_item(Item=item)
     return _response(201, {"id": message_id, "createdAt": now})
+
+
+def handle_message_upload_url(event):
+    session = auth.require_auth(event)
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    body = _parse_body(event)
+    if not body or not body.get("filename") or not body.get("contentType"):
+        return _response(400, {"error": "Provide 'filename' and 'contentType'"})
+
+    import ulid as ulid_mod
+
+    ext = body["filename"].rsplit(".", 1)[-1] if "." in body["filename"] else ""
+    s3_key = f"message-photos/{ulid_mod.new()}.{ext}" if ext else f"message-photos/{ulid_mod.new()}"
+
+    s3_client = boto3.client("s3")
+    presigned_url = s3_client.generate_presigned_url(
+        "put_object",
+        Params={
+            "Bucket": os.environ["MEDIA_BUCKET"],
+            "Key": s3_key,
+            "ContentType": body["contentType"],
+        },
+        ExpiresIn=3600,
+    )
+    return _response(200, {"uploadUrl": presigned_url, "s3Key": s3_key})
+
+
+def handle_delete_message(event):
+    session = auth.require_auth(event, role="admin")
+    if not session:
+        return _response(401, {"error": "Unauthorized"})
+
+    path = event.get("path", "")
+    message_id = path.split("/")[-1]
+
+    table = auth.get_dynamodb_table()
+    table.delete_item(Key={"PK": "MSG", "SK": f"MSG#{message_id}"})
+    return _response(200, {"message": "Deleted"})
 
 
 # --- Media ---
