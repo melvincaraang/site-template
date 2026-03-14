@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import { authState } from '$lib/stores/auth.svelte';
 	import { goto } from '$app/navigation';
@@ -22,12 +21,17 @@
 	let tokenDays = $state(7);
 	let creatingToken = $state(false);
 
-	onMount(async () => {
-		if (authState.role !== 'admin') {
-			goto('/');
-			return;
+	// Wait for session check to complete before verifying admin role
+	let dataLoaded = false;
+	$effect(() => {
+		if (!authState.checking && !dataLoaded) {
+			if (authState.role !== 'admin') {
+				goto('/');
+			} else {
+				dataLoaded = true;
+				loadData();
+			}
 		}
-		await loadData();
 	});
 
 	async function loadData() {

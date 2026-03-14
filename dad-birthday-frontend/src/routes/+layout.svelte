@@ -4,6 +4,7 @@
 	import { authState } from '$lib/stores/auth.svelte';
 	import { api } from '$lib/api';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import Nav from '$lib/components/Nav.svelte';
 
 	let { children } = $props();
@@ -18,7 +19,8 @@
 				const data = await api.getSession();
 				authState.role = data.role;
 			} catch {
-				// No valid session — leave role as null
+				// No valid session — redirect to login
+				goto('/');
 			} finally {
 				authState.checking = false;
 			}
