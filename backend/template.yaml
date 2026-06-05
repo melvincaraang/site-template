@@ -1,11 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Dad's 80th Birthday Tribute Site — API Backend
+Description: Tribute Site — API Backend
 
 Parameters:
   TableName:
     Type: String
-    Default: DadBirthdayTable
+    Default: SiteTable
   MediaBucket:
     Type: String
   PartyCode:
@@ -17,7 +17,6 @@ Parameters:
     NoEcho: true
   CloudFrontDomain:
     Type: String
-    Default: dad.melvinit.com
   DynamoDbEndpoint:
     Type: String
     Default: ''
@@ -41,7 +40,7 @@ Globals:
       LogFormat: JSON
 
 Resources:
-  BirthdayApiFunction:
+  SiteApiFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
@@ -132,6 +131,6 @@ Outputs:
   ApiUrl:
     Description: API Gateway endpoint URL
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
-  BirthdayApiFunction:
+  SiteApiFunction:
     Description: Lambda Function ARN
-    Value: !GetAtt BirthdayApiFunction.Arn
+    Value: !GetAtt SiteApiFunction.Arn

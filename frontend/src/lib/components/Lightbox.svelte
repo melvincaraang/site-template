@@ -22,7 +22,7 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onclick={onclose}>
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div class="relative max-h-[90vh] max-w-4xl" onclick={(e) => e.stopPropagation()}>
-		<button class="hover:text-gold absolute -top-10 right-0 text-2xl text-white" onclick={onclose}>
+		<button class="hover:text-accent absolute -top-10 right-0 text-2xl text-white" onclick={onclose}>
 			&times; Close
 		</button>
 
@@ -33,7 +33,7 @@
 		{/if}
 
 		{#if item.caption}
-			<p class="font-handwriting mt-3 text-center text-xl text-white">
+			<p class="mt-3 text-center text-xl text-white">
 				{item.caption}
 			</p>
 		{/if}

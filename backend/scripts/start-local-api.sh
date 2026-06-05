@@ -9,4 +9,4 @@ sam build
 echo "Starting local API on http://localhost:3000..."
 sam local start-api \
   --env-vars env.json \
-  --docker-network dad-birthday-backend_default
+  --docker-network backend_default

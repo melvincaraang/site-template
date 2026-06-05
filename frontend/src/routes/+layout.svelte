@@ -28,7 +28,7 @@
 	});
 </script>
 
-<div class="bg-cream min-h-screen">
+<div class="bg-surface min-h-screen">
 	{#if authState.role}
 		<Nav />
 	{/if}

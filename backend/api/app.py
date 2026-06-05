@@ -141,7 +141,7 @@ def handle_get_messages(event):
         ExpressionAttributeValues={":pk": "MSG"},
         ScanIndexForward=False,  # newest first
     )
-    cf_domain = os.environ.get("CLOUDFRONT_DOMAIN", "dad.melvinit.com")
+    cf_domain = os.environ["CLOUDFRONT_DOMAIN"]
     messages = []
     for item in result.get("Items", []):
         msg = {
@@ -239,7 +239,7 @@ def handle_get_media(event):
         KeyConditionExpression="PK = :pk",
         ExpressionAttributeValues={":pk": "MEDIA"},
     )
-    cf_domain = os.environ.get("CLOUDFRONT_DOMAIN", "dad.melvinit.com")
+    cf_domain = os.environ["CLOUDFRONT_DOMAIN"]
     media = []
     for item in sorted(result.get("Items", []), key=lambda x: x.get("order", 0)):
         media.append({
@@ -416,7 +416,7 @@ def handle_post_token(event):
         "createdAt": now,
     })
 
-    cf_domain = os.environ.get("CLOUDFRONT_DOMAIN", "dad.melvinit.com")
+    cf_domain = os.environ["CLOUDFRONT_DOMAIN"]
     url = f"https://{cf_domain}/?token={token_uuid}"
 
     return _response(201, {"uuid": token_uuid, "url": url, "expiresAt": expires_at})
@@ -452,7 +452,7 @@ def _response(status_code: int, body: dict, headers: dict | None = None) -> dict
     """Build an API Gateway response."""
     resp_headers = {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": f"https://{os.environ.get('CLOUDFRONT_DOMAIN', 'dad.melvinit.com')}",
+        "Access-Control-Allow-Origin": f"https://{os.environ['CLOUDFRONT_DOMAIN']}",
         "Access-Control-Allow-Credentials": "true",
     }
     if headers:

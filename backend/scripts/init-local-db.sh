@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ENDPOINT="http://localhost:8000"
-TABLE_NAME="DadBirthdayTable"
+TABLE_NAME="SiteTable"
 
 # Override any SSO/profile config — DynamoDB Local doesn't check credentials
 unset AWS_PROFILE 2>/dev/null || true

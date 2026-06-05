@@ -1,7 +1,7 @@
 version = 0.1
 
 [default.global.parameters]
-stack_name = "dad-birthday-backend"
+stack_name = "site-backend"
 
 [default.build.parameters]
 use_container = false

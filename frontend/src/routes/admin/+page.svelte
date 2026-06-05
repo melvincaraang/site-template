@@ -10,6 +10,7 @@
 	let tokens = $state<Token[]>([]);
 	let media = $state<MediaItem[]>([]);
 	let loading = $state(true);
+	let siteUrl = $state('');
 
 	// Upload state
 	let uploadFiles = $state<FileList | null>(null);
@@ -29,6 +30,7 @@
 				goto('/');
 			} else {
 				dataLoaded = true;
+				siteUrl = window.location.origin;
 				loadData();
 			}
 		}
@@ -166,7 +168,7 @@
 	let copiedUuid = $state('');
 
 	async function handleCopyLink(uuid: string) {
-		const url = `https://dad.melvinit.com/?token=${uuid}`;
+		const url = `${siteUrl}/?token=${uuid}`;
 		await navigator.clipboard.writeText(url);
 		copiedUuid = uuid;
 		setTimeout(() => (copiedUuid = ''), 2000);
@@ -174,56 +176,56 @@
 </script>
 
 <svelte:head>
-	<title>Admin - Dad's 80th Birthday</title>
+	<title>Admin</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl px-4 py-8">
-	<h1 class="font-display text-brown mb-6 text-3xl">Admin Dashboard</h1>
+	<h1 class="font-display text-primary mb-6 text-3xl">Admin Dashboard</h1>
 
 	<!-- Tabs -->
-	<div class="border-gold/30 mb-6 flex gap-4 border-b">
+	<div class="border-accent/30 mb-6 flex gap-4 border-b">
 		<button
 			class="pb-2 transition-colors"
 			class:border-b-2={activeTab === 'media'}
-			class:border-gold={activeTab === 'media'}
-			class:text-brown={activeTab === 'media'}
-			class:text-brown-light={activeTab !== 'media'}
+			class:border-accent={activeTab === 'media'}
+			class:text-primary={activeTab === 'media'}
+			class:text-primary/50={activeTab !== 'media'}
 			onclick={() => (activeTab = 'media')}>Upload Media</button
 		>
 		<button
 			class="pb-2 transition-colors"
 			class:border-b-2={activeTab === 'tokens'}
-			class:border-gold={activeTab === 'tokens'}
-			class:text-brown={activeTab === 'tokens'}
-			class:text-brown-light={activeTab !== 'tokens'}
+			class:border-accent={activeTab === 'tokens'}
+			class:text-primary={activeTab === 'tokens'}
+			class:text-primary/50={activeTab !== 'tokens'}
 			onclick={() => (activeTab = 'tokens')}>Access Tokens</button
 		>
 	</div>
 
 	{#if loading}
-		<p class="text-brown-light italic">Loading...</p>
+		<p class="text-primary/60 italic">Loading...</p>
 	{:else if activeTab === 'media'}
 		<!-- Upload form -->
-		<div class="border-gold/30 mb-8 rounded-lg border bg-white/80 p-6">
-			<h2 class="font-display text-brown mb-4 text-xl">Upload Photos & Videos</h2>
+		<div class="border-accent/30 mb-8 rounded-lg border bg-white/80 p-6">
+			<h2 class="font-display text-primary mb-4 text-xl">Upload Photos & Videos</h2>
 			<form onsubmit={handleUpload} class="space-y-4">
 				<input
 					type="file"
 					accept="image/*,video/*"
 					multiple
 					onchange={(e) => (uploadFiles = e.currentTarget.files)}
-					class="text-brown w-full"
+					class="text-primary w-full"
 				/>
 				<input
 					type="text"
 					bind:value={uploadCaption}
 					placeholder="Caption (optional)"
-					class="border-gold/40 w-full rounded-md border px-4 py-2"
+					class="border-accent/40 w-full rounded-md border px-4 py-2"
 				/>
 				<button
 					type="submit"
 					disabled={uploading || !uploadFiles?.length}
-					class="bg-brown hover:bg-brown-light text-cream rounded-md px-6 py-2 disabled:opacity-50"
+					class="bg-accent hover:bg-accent-light text-white rounded-md px-6 py-2 disabled:opacity-50"
 				>
 					{uploading ? 'Uploading...' : 'Upload'}
 				</button>
@@ -233,10 +235,10 @@
 		<!-- Media list -->
 		<div class="space-y-3">
 			{#each media as item, index (item.id)}
-				<div class="border-gold/20 flex items-center gap-3 rounded-lg border bg-white/70 p-3">
+				<div class="border-accent/20 flex items-center gap-3 rounded-lg border bg-white/70 p-3">
 					{#if item.type === 'video'}
 						<div
-							class="bg-brown-light/20 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded"
+							class="bg-primary/10 flex h-16 w-16 flex-shrink-0 items-center justify-center rounded"
 						>
 							<span class="text-sm">Video</span>
 						</div>
@@ -257,13 +259,13 @@
 									if (e.key === 'Enter') e.currentTarget.blur();
 									if (e.key === 'Escape') cancelEditCaption();
 								}}
-								class="border-gold/40 text-brown w-full rounded border px-2 py-1 text-sm"
+								class="border-accent/40 text-primary w-full rounded border px-2 py-1 text-sm"
 								autofocus
 							/>
 						{:else}
 							<button
 								onclick={() => startEditCaption(item)}
-								class="text-brown cursor-pointer text-left text-sm underline decoration-dotted underline-offset-2 hover:decoration-solid"
+								class="text-primary cursor-pointer text-left text-sm underline decoration-dotted underline-offset-2 hover:decoration-solid"
 							>
 								{item.caption || '(no caption)'}
 							</button>
@@ -273,7 +275,7 @@
 						<button
 							disabled={index === 0}
 							onclick={() => moveMedia(index, 'top')}
-							class="text-brown-light hover:text-brown p-0.5 disabled:opacity-20"
+							class="text-primary/40 hover:text-primary p-0.5 disabled:opacity-20"
 							title="Move to top"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,7 +290,7 @@
 						<button
 							disabled={index === 0}
 							onclick={() => moveMedia(index, 'up')}
-							class="text-brown-light hover:text-brown p-0.5 disabled:opacity-20"
+							class="text-primary/40 hover:text-primary p-0.5 disabled:opacity-20"
 							title="Move up"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +305,7 @@
 						<button
 							disabled={index === media.length - 1}
 							onclick={() => moveMedia(index, 'down')}
-							class="text-brown-light hover:text-brown p-0.5 disabled:opacity-20"
+							class="text-primary/40 hover:text-primary p-0.5 disabled:opacity-20"
 							title="Move down"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,7 +320,7 @@
 						<button
 							disabled={index === media.length - 1}
 							onclick={() => moveMedia(index, 'bottom')}
-							class="text-brown-light hover:text-brown p-0.5 disabled:opacity-20"
+							class="text-primary/40 hover:text-primary p-0.5 disabled:opacity-20"
 							title="Move to bottom"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,21 +342,21 @@
 		</div>
 	{:else}
 		<!-- Token creation -->
-		<div class="border-gold/30 mb-8 rounded-lg border bg-white/80 p-6">
-			<h2 class="font-display text-brown mb-4 text-xl">Create Access Link</h2>
+		<div class="border-accent/30 mb-8 rounded-lg border bg-white/80 p-6">
+			<h2 class="font-display text-primary mb-4 text-xl">Create Access Link</h2>
 			<form onsubmit={handleCreateToken} class="space-y-4">
 				<input
 					type="text"
 					bind:value={tokenLabel}
 					placeholder="Label (e.g., 'For Uncle Bob')"
-					class="border-gold/40 w-full rounded-md border px-4 py-2"
+					class="border-accent/40 w-full rounded-md border px-4 py-2"
 				/>
 				<div class="flex items-center gap-2">
-					<label for="days" class="text-brown text-sm">Expires in:</label>
+					<label for="days" class="text-primary text-sm">Expires in:</label>
 					<select
 						id="days"
 						bind:value={tokenDays}
-						class="border-gold/40 rounded-md border px-3 py-2"
+						class="border-accent/40 rounded-md border px-3 py-2"
 					>
 						<option value={1}>1 day</option>
 						<option value={3}>3 days</option>
@@ -366,7 +368,7 @@
 				<button
 					type="submit"
 					disabled={creatingToken || !tokenLabel.trim()}
-					class="bg-brown hover:bg-brown-light text-cream rounded-md px-6 py-2 disabled:opacity-50"
+					class="bg-accent hover:bg-accent-light text-white rounded-md px-6 py-2 disabled:opacity-50"
 				>
 					{creatingToken ? 'Creating...' : 'Create Link'}
 				</button>
@@ -376,11 +378,11 @@
 		<!-- Token list -->
 		<div class="space-y-3">
 			{#each tokens as token (token.uuid)}
-				<div class="border-gold/20 rounded-lg border bg-white/70 p-4">
+				<div class="border-accent/20 rounded-lg border bg-white/70 p-4">
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-brown font-medium">{token.label || '(no label)'}</p>
-							<p class="text-brown-light text-xs">
+							<p class="text-primary font-medium">{token.label || '(no label)'}</p>
+							<p class="text-primary/60 text-xs">
 								Expires: {new Date(token.expiresAt * 1000).toLocaleDateString()}
 							</p>
 						</div>
@@ -389,13 +391,13 @@
 							onclick={() => handleDeleteToken(token.uuid)}>Revoke</button
 						>
 					</div>
-					<div class="bg-cream/50 mt-2 flex items-center gap-2 rounded p-2">
+					<div class="bg-surface/50 mt-2 flex items-center gap-2 rounded p-2">
 						<p class="flex-1 text-xs break-all">
-							https://dad.melvinit.com/?token={token.uuid}
+							{siteUrl}/?token={token.uuid}
 						</p>
 						<button
 							onclick={() => handleCopyLink(token.uuid)}
-							class="bg-brown hover:bg-brown-light text-cream shrink-0 rounded px-3 py-1 text-xs transition-colors"
+							class="bg-accent hover:bg-accent-light text-white shrink-0 rounded px-3 py-1 text-xs transition-colors"
 						>
 							{copiedUuid === token.uuid ? 'Copied!' : 'Copy'}
 						</button>

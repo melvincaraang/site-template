@@ -1,4 +1,4 @@
-name: Deploy Birthday Tribute Site
+name: Deploy Tribute Site
 
 on:
   push:
@@ -26,23 +26,23 @@ jobs:
 
       # Frontend
       - name: Install frontend dependencies
-        working-directory: ./dad-birthday-frontend
+        working-directory: ./frontend
         run: npm ci
 
       - name: Lint frontend
-        working-directory: ./dad-birthday-frontend
+        working-directory: ./frontend
         run: npm run lint
 
       - name: Type-check frontend
-        working-directory: ./dad-birthday-frontend
+        working-directory: ./frontend
         run: npm run check
 
       - name: Build frontend
-        working-directory: ./dad-birthday-frontend
+        working-directory: ./frontend
         run: npm run build
 
       - name: Unit test frontend
-        working-directory: ./dad-birthday-frontend
+        working-directory: ./frontend
         run: npm run test:unit -- --run
 
       # Backend
@@ -51,11 +51,11 @@ jobs:
           python-version: '3.13'
 
       - name: Install backend dependencies
-        working-directory: ./dad-birthday-backend
+        working-directory: ./backend
         run: pip install -r api/requirements.txt -r tests/requirements.txt
 
       - name: Test backend
-        working-directory: ./dad-birthday-backend
+        working-directory: ./backend
         run: python -m pytest tests/unit -v
 
       # Infra
@@ -73,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: ./dad-birthday-frontend/build
+          path: ./frontend/build
           retention-days: 1
 
   # ── Deploy CDK Infrastructure ─────────────────────────────
@@ -107,16 +107,18 @@ jobs:
         working-directory: ./infra
         env:
           CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
+          SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+          PARENT_DOMAIN: ${{ vars.PARENT_DOMAIN }}
         run: |
-          npx cdk deploy DadBirthdayStack \
+          npx cdk deploy TributeSiteStack \
             --require-approval never \
-            -c apiGatewayDomain=${{ secrets.DAD_API_GATEWAY_DOMAIN }}
+            -c apiGatewayDomain=${{ secrets.API_GATEWAY_DOMAIN }}
 
       - name: Extract stack outputs
         id: outputs
         run: |
           OUTPUTS=$(aws cloudformation describe-stacks \
-            --stack-name DadBirthdayStack \
+            --stack-name TributeSiteStack \
             --query "Stacks[0].Outputs" \
             --output json)
 
@@ -150,14 +152,14 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: SAM build
-        working-directory: ./dad-birthday-backend
+        working-directory: ./backend
         run: sam build --use-container
 
       - name: SAM deploy
-        working-directory: ./dad-birthday-backend
+        working-directory: ./backend
         run: |
           sam deploy \
-            --stack-name dad-birthday-backend \
+            --stack-name site-backend \
             --resolve-s3 \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
@@ -165,10 +167,10 @@ jobs:
             --parameter-overrides \
               TableName=${{ needs.deploy-infra.outputs.table-name }} \
               MediaBucket=${{ needs.deploy-infra.outputs.media-bucket }} \
-              PartyCode=${{ secrets.DAD_PARTY_CODE }} \
-              AdminCode=${{ secrets.DAD_ADMIN_CODE }} \
-              JwtSecret=${{ secrets.DAD_JWT_SECRET }} \
-              CloudFrontDomain=dad.melvinit.com
+              PartyCode=${{ secrets.PARTY_CODE }} \
+              AdminCode=${{ secrets.ADMIN_CODE }} \
+              JwtSecret=${{ secrets.JWT_SECRET }} \
+              CloudFrontDomain=${{ vars.SITE_DOMAIN }}
 
   # ── Deploy Frontend ───────────────────────────────────────
   deploy-frontend:

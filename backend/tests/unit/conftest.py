@@ -6,10 +6,10 @@ import pytest
 # Set env vars before importing app
 os.environ["TABLE_NAME"] = "TestTable"
 os.environ["MEDIA_BUCKET"] = "test-media-bucket"
-os.environ["PARTY_CODE"] = "dad80"
-os.environ["ADMIN_CODE"] = "admin-secret"
+os.environ["PARTY_CODE"] = "test-party-code"
+os.environ["ADMIN_CODE"] = "test-admin-code"
 os.environ["JWT_SECRET"] = "test-jwt-secret-key"
-os.environ["CLOUDFRONT_DOMAIN"] = "dad.melvinit.com"
+os.environ["CLOUDFRONT_DOMAIN"] = "example.com"
 
 
 @pytest.fixture()

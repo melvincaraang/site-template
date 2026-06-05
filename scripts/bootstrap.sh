@@ -1,25 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# One-time bootstrap for Dad's Birthday Tribute Site.
+# One-time bootstrap for the Tribute Site.
 #
 # Prerequisites: AWS CLI, CDK CLI, SAM CLI, Node.js 20+, Python 3.13
 #
 # Usage:
 #   export CDK_DEFAULT_ACCOUNT=123456789012
-#   export DAD_PARTY_CODE=your-party-code
-#   export DAD_ADMIN_CODE=your-admin-code
-#   export DAD_JWT_SECRET=$(openssl rand -hex 32)
+#   export SITE_DOMAIN=event.example.com
+#   export PARENT_DOMAIN=example.com
+#   export PARTY_CODE=your-party-code
+#   export ADMIN_CODE=your-admin-code
+#   export JWT_SECRET=$(openssl rand -hex 32)
 #   ./scripts/bootstrap.sh
 
 REGION="us-east-1"
-CDK_STACK="DadBirthdayStack"
-SAM_STACK="dad-birthday-backend"
+CDK_STACK="TributeSiteStack"
+SAM_STACK="site-backend"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "=== Dad Birthday Tribute Site — Bootstrap ==="
+echo "=== Tribute Site — Bootstrap ==="
 
-for var in CDK_DEFAULT_ACCOUNT DAD_PARTY_CODE DAD_ADMIN_CODE DAD_JWT_SECRET; do
+for var in CDK_DEFAULT_ACCOUNT SITE_DOMAIN PARENT_DOMAIN PARTY_CODE ADMIN_CODE JWT_SECRET; do
   if [ -z "${!var:-}" ]; then
     echo "ERROR: $var is not set." >&2
     exit 1
@@ -27,6 +29,7 @@ for var in CDK_DEFAULT_ACCOUNT DAD_PARTY_CODE DAD_ADMIN_CODE DAD_JWT_SECRET; do
 done
 
 echo "Account: $CDK_DEFAULT_ACCOUNT"
+echo "Domain:  $SITE_DOMAIN"
 echo "Region:  $REGION"
 echo ""
 
@@ -61,7 +64,7 @@ echo "  DistributionId: $DIST_ID"
 
 # --- Step 4: SAM Deploy ---
 echo "--- 4/7: SAM Build & Deploy ---"
-cd "$ROOT/dad-birthday-backend"
+cd "$ROOT/backend"
 sam build --use-container
 sam deploy \
   --stack-name "$SAM_STACK" \
@@ -73,10 +76,10 @@ sam deploy \
   --parameter-overrides \
     "TableName=$TABLE_NAME" \
     "MediaBucket=$MEDIA_BUCKET" \
-    "PartyCode=$DAD_PARTY_CODE" \
-    "AdminCode=$DAD_ADMIN_CODE" \
-    "JwtSecret=$DAD_JWT_SECRET" \
-    "CloudFrontDomain=dad.melvinit.com"
+    "PartyCode=$PARTY_CODE" \
+    "AdminCode=$ADMIN_CODE" \
+    "JwtSecret=$JWT_SECRET" \
+    "CloudFrontDomain=$SITE_DOMAIN"
 
 # --- Step 5: Extract API Gateway Domain ---
 echo "--- 5/7: Reading API Gateway domain ---"
@@ -95,7 +98,7 @@ npx cdk deploy "$CDK_STACK" --require-approval never \
 
 # --- Step 7: Deploy Frontend ---
 echo "--- 7/7: Build & Deploy Frontend ---"
-cd "$ROOT/dad-birthday-frontend"
+cd "$ROOT/frontend"
 npm ci
 npm run build
 aws s3 sync build/ "s3://$SITE_BUCKET" --delete
@@ -105,13 +108,17 @@ aws cloudfront create-invalidation \
 echo ""
 echo "=== Bootstrap complete! ==="
 echo ""
-echo "Site: https://dad.melvinit.com"
+echo "Site: https://$SITE_DOMAIN"
 echo "API:  $API_URL"
 echo ""
-echo "Set these GitHub secrets:"
-echo "  AWS_IAM_ROLE_ARN        = <your OIDC role ARN>"
-echo "  CDK_DEFAULT_ACCOUNT     = $CDK_DEFAULT_ACCOUNT"
-echo "  DAD_API_GATEWAY_DOMAIN  = $API_DOMAIN"
-echo "  DAD_PARTY_CODE          = $DAD_PARTY_CODE"
-echo "  DAD_ADMIN_CODE          = $DAD_ADMIN_CODE"
-echo "  DAD_JWT_SECRET          = $DAD_JWT_SECRET"
+echo "Set these GitHub secrets/vars:"
+echo "  Secrets:"
+echo "    AWS_IAM_ROLE_ARN       = <your OIDC role ARN>"
+echo "    API_GATEWAY_DOMAIN     = $API_DOMAIN"
+echo "    PARTY_CODE             = $PARTY_CODE"
+echo "    ADMIN_CODE             = $ADMIN_CODE"
+echo "    JWT_SECRET             = $JWT_SECRET"
+echo "  Variables:"
+echo "    CDK_DEFAULT_ACCOUNT    = $CDK_DEFAULT_ACCOUNT"
+echo "    SITE_DOMAIN            = $SITE_DOMAIN"
+echo "    PARENT_DOMAIN          = $PARENT_DOMAIN"

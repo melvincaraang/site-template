@@ -51,30 +51,30 @@
 </script>
 
 <svelte:head>
-	<title>Dad's 80th Birthday</title>
+	<title>My Site</title>
 </svelte:head>
 
 {#if authState.checking}
 	<div class="flex min-h-screen items-center justify-center">
-		<p class="text-brown-light text-xl italic">Checking your invitation...</p>
+		<p class="text-primary/60 text-xl italic">Checking your invitation...</p>
 	</div>
 {:else}
 	<div class="flex min-h-screen flex-col items-center justify-center px-4">
 		<div class="w-full max-w-md text-center">
-			<h1 class="font-display text-gold mb-2 text-6xl font-bold">80</h1>
-			<p class="font-display text-brown mb-8 text-2xl">Years of Love & Memories</p>
+			<h1 class="font-display text-accent mb-2 text-5xl font-bold">Welcome</h1>
+			<p class="font-display text-primary mb-8 text-xl">Enter your code to continue</p>
 
-			<div class="border-gold/30 rounded-lg border bg-white/80 p-8 shadow-lg backdrop-blur-sm">
-				<p class="text-brown-light mb-6 text-lg">
-					{adminMode ? 'Enter the admin code' : 'Enter the party code to view the celebration'}
+			<div class="border-accent/30 rounded-lg border bg-white/80 p-8 shadow-lg backdrop-blur-sm">
+				<p class="text-primary/70 mb-6 text-lg">
+					{adminMode ? 'Enter the admin code' : 'Enter the access code'}
 				</p>
 
 				<form onsubmit={handleSubmit} class="space-y-4">
 					<input
 						type={adminMode ? 'password' : 'text'}
 						bind:value={code}
-						placeholder={adminMode ? 'Enter admin code' : 'Enter party code'}
-						class="border-gold/40 text-brown placeholder:text-brown-light/50 focus:border-gold focus:ring-gold bg-cream/50 w-full rounded-md border px-4 py-3 text-center text-lg"
+						placeholder={adminMode ? 'Enter admin code' : 'Enter access code'}
+						class="border-accent/40 text-primary placeholder:text-primary/40 focus:border-accent focus:ring-accent bg-surface/50 w-full rounded-md border px-4 py-3 text-center text-lg"
 					/>
 
 					{#if error}
@@ -84,7 +84,7 @@
 					<button
 						type="submit"
 						disabled={loading || !code.trim()}
-						class="bg-brown hover:bg-brown-light text-cream w-full rounded-md px-6 py-3 text-lg transition-colors disabled:opacity-50"
+						class="bg-accent hover:bg-accent-light text-white w-full rounded-md px-6 py-3 text-lg transition-colors disabled:opacity-50"
 					>
 						{loading ? 'Verifying...' : adminMode ? 'Sign In' : 'Enter'}
 					</button>
@@ -97,9 +97,9 @@
 						code = '';
 						error = '';
 					}}
-					class="text-brown-light/60 hover:text-brown-light mt-4 text-sm underline"
+					class="text-primary/40 hover:text-primary/70 mt-4 text-sm underline"
 				>
-					{adminMode ? 'Back to party login' : 'Admin login'}
+					{adminMode ? 'Back to guest login' : 'Admin login'}
 				</button>
 			</div>
 		</div>

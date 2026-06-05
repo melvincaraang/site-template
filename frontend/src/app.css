@@ -1,24 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Caveat:wght@400..700&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
+/*
+ * Theme customization — edit these vars to match your site's look.
+ * To use custom fonts, import them here (e.g. from Google Fonts) and
+ * reference them in --font-display / --font-body.
+ */
 @theme {
-	--color-cream: #fff8f0;
-	--color-cream-dark: #f5ede0;
-	--color-brown: #3e2723;
-	--color-brown-light: #5d4037;
-	--color-gold: #c8a96e;
-	--color-gold-light: #d4bc8b;
-	--color-sepia: #704214;
-	--font-display: 'Playfair Display', serif;
-	--font-handwriting: 'Caveat', cursive;
+	--color-primary: #1a1a2e;
+	--color-primary-light: #16213e;
+	--color-accent: #0f3460;
+	--color-accent-light: #533483;
+	--color-surface: #f8f9fa;
+	--color-surface-dark: #e9ecef;
+	--font-display: system-ui, sans-serif;
+	--font-body: system-ui, sans-serif;
 }
 
 body {
-	font-family: var(--font-display);
-	background-color: var(--color-cream);
-	color: var(--color-brown);
+	font-family: var(--font-body);
+	background-color: var(--color-surface);
+	color: var(--color-primary);
 }
 
 h1,

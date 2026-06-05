@@ -1,30 +1,33 @@
-# Dad's 80th Birthday Tribute Site
+# Tribute Site Template
 
-Monorepo for a Svelte tribute website with a Python Lambda backend and AWS CDK infrastructure.
-Cloned from the dakamin portfolio structure.
+Monorepo for a Svelte tribute/event site with a Python Lambda backend and AWS CDK infrastructure.
 
 ## Project Structure
 
 ```
-dad-birthday-frontend/   # Svelte 5 + SvelteKit 2 + Tailwind CSS 4 (TypeScript)
-dad-birthday-backend/    # Python 3.13 AWS Lambda (SAM)
-infra/                   # AWS CDK (TypeScript) — S3 + CloudFront + DynamoDB + Route53
+frontend/   # Svelte 5 + SvelteKit 2 + Tailwind CSS 4 (TypeScript)
+backend/    # Python 3.13 AWS Lambda (SAM)
+infra/      # AWS CDK (TypeScript) — S3 + CloudFront + DynamoDB + Route53
 ```
 
-## Design Document
+## Configuration
 
-See `docs/plans/2026-03-01-birthday-tribute-design.md` for the full approved design.
+Before deploying, set these environment variables (see `scripts/bootstrap.sh`):
 
-## Domain
+| Variable              | Description                              |
+|-----------------------|------------------------------------------|
+| `CDK_DEFAULT_ACCOUNT` | AWS account ID                           |
+| `SITE_DOMAIN`         | Full subdomain, e.g. `event.example.com` |
+| `PARENT_DOMAIN`       | Parent hosted zone, e.g. `example.com`  |
+| `PARTY_CODE`          | Guest access code                        |
+| `ADMIN_CODE`          | Admin access code                        |
+| `JWT_SECRET`          | Random hex secret for JWTs              |
 
-- **Site**: dad.melvinit.com
-- **Parent zone**: melvinit.com (existing Route53 hosted zone)
-
-## Frontend (`dad-birthday-frontend/`)
+## Frontend (`frontend/`)
 
 - **Stack**: Svelte 5, SvelteKit 2, Vite 6, Tailwind CSS 4, TypeScript 5
 - **Static adapter** with SPA fallback
-- **Design**: Nostalgic & vintage — sepia tones, Playfair Display + Caveat fonts
+- **Theme**: Edit `src/app.css` to customize colors and fonts
 
 ### Commands
 
@@ -39,31 +42,21 @@ npm run test:e2e     # Playwright
 npm run test         # Both unit + E2E
 ```
 
-### Testing
-
-- **Unit**: Vitest — jsdom for client, node for server
-- **E2E**: Playwright — builds and serves on port 4173
-
-### Linting & Formatting
-
-- ESLint 9 flat config with typescript-eslint + eslint-plugin-svelte
-- Prettier with plugins: prettier-plugin-svelte, prettier-plugin-tailwindcss
-- TypeScript strict mode enabled
-
-## Backend (`dad-birthday-backend/`)
+## Backend (`backend/`)
 
 - **Stack**: Python 3.13, AWS SAM, Lambda + API Gateway
 - **Database**: DynamoDB (single table design)
-- **Endpoints**: See design doc for full API spec
 
 ### Key Endpoints
 
-- `POST /verify` — validate party code or UUID token
-- `GET /media` — list gallery media
-- `GET /messages` — list birthday messages
-- `POST /messages` — submit a birthday message
-- `POST /admin/media/upload-url` — pre-signed S3 upload URL
-- `POST /admin/tokens` — create expiring access token
+- `POST /api/verify` — validate party code or UUID token
+- `GET /api/session` — check current session
+- `POST /api/logout` — end session
+- `GET /api/media` — list gallery media
+- `GET /api/messages` — list messages
+- `POST /api/messages` — submit a message
+- `POST /api/admin/media/upload-url` — pre-signed S3 upload URL
+- `POST /api/admin/tokens` — create expiring access token
 
 ### Commands
 
@@ -78,7 +71,6 @@ python -m pytest tests/unit -v
 
 - **Stack**: AWS CDK 2 (TypeScript)
 - **Resources**: S3 (site + media buckets), CloudFront (3 behaviors), DynamoDB, ACM, Route53
-- **Domain**: dad.melvinit.com
 
 ### Commands
 
@@ -91,8 +83,22 @@ npm run test        # Jest tests
 
 ## CI/CD
 
-GitHub Actions workflow:
-- Triggers on push to `main`
-- Builds frontend, deploys to S3, invalidates CloudFront
-- Builds and deploys SAM backend
-- Uses OIDC for AWS auth
+GitHub Actions workflow (`deploy.yml`) triggers on push to `main`:
+1. Builds frontend, runs lint + type-check + unit tests
+2. Runs backend Python unit tests
+3. Deploys CDK infrastructure
+4. Deploys SAM backend
+5. Syncs frontend build to S3, invalidates CloudFront
+
+### Required GitHub Secrets / Vars
+
+| Name                  | Type   | Description                          |
+|-----------------------|--------|--------------------------------------|
+| `AWS_IAM_ROLE_ARN`    | Secret | OIDC role ARN for AWS auth           |
+| `API_GATEWAY_DOMAIN`  | Secret | API Gateway domain (after 1st deploy)|
+| `PARTY_CODE`          | Secret | Guest access code                    |
+| `ADMIN_CODE`          | Secret | Admin access code                    |
+| `JWT_SECRET`          | Secret | JWT signing secret                   |
+| `CDK_DEFAULT_ACCOUNT` | Var    | AWS account ID                       |
+| `SITE_DOMAIN`         | Var    | Full domain, e.g. `event.example.com`|
+| `PARENT_DOMAIN`       | Var    | Parent zone, e.g. `example.com`      |
