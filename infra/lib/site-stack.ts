@@ -8,18 +8,18 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 
-export interface BirthdayTributeSiteStackProps extends cdk.StackProps {
-  readonly domainName: string;       // e.g. dad.melvinit.com
-  readonly parentDomainName: string; // e.g. melvinit.com
+export interface TributeSiteStackProps extends cdk.StackProps {
+  readonly domainName: string;       // e.g. event.example.com
+  readonly parentDomainName: string; // e.g. example.com
   readonly apiGatewayDomain?: string; // e.g. abc123.execute-api.us-east-1.amazonaws.com
 }
 
-export class BirthdayTributeSiteStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: BirthdayTributeSiteStackProps) {
+export class TributeSiteStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: TributeSiteStackProps) {
     super(scope, id, {
       ...props,
       env: { ...props.env, region: 'us-east-1' },
-      description: `Birthday tribute site infrastructure for ${props.domainName}`,
+      description: `Tribute site infrastructure for ${props.domainName}`,
     });
 
     const { domainName, parentDomainName, apiGatewayDomain } = props;
@@ -30,8 +30,8 @@ export class BirthdayTributeSiteStack extends cdk.Stack {
     });
 
     // --- DynamoDB Table ---
-    const table = new dynamodb.Table(this, 'BirthdayTable', {
-      tableName: 'DadBirthdayTable',
+    const table = new dynamodb.Table(this, 'SiteTable', {
+      tableName: 'SiteTable',
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -104,7 +104,7 @@ export class BirthdayTributeSiteStack extends cdk.Stack {
     }
 
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
-      comment: `Birthday tribute site for ${domainName}`,
+      comment: `Tribute site for ${domainName}`,
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(siteBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
