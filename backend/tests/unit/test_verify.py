@@ -33,7 +33,7 @@ class TestVerifyWithPartyCode:
 
 class TestVerifyWithAdminCode:
     def test_admin_code_returns_admin_role(self, make_event):
-        event = make_event("POST", "/api/verify", body={"code": "admin-secret", "admin": True})
+        event = make_event("POST", "/api/verify", body={"code": "test-admin-code", "admin": True})
         result = app.lambda_handler(event, None)
 
         assert result["statusCode"] == 200
