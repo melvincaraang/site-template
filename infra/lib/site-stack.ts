@@ -8,30 +8,29 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 
-export interface TributeSiteStackProps extends cdk.StackProps {
-  readonly domainName: string;       // e.g. event.example.com
-  readonly parentDomainName: string; // e.g. example.com
-  readonly apiGatewayDomain?: string; // e.g. abc123.execute-api.us-east-1.amazonaws.com
+export interface SiteStackProps extends cdk.StackProps {
+  readonly domainName: string;
+  readonly parentDomainName: string;
+  readonly apiGatewayDomain?: string;
 }
 
-export class TributeSiteStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: TributeSiteStackProps) {
+export class SiteStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: SiteStackProps) {
     super(scope, id, {
       ...props,
       env: { ...props.env, region: 'us-east-1' },
-      description: `Tribute site infrastructure for ${props.domainName}`,
+      description: `Site infrastructure for ${props.domainName}`,
     });
 
     const { domainName, parentDomainName, apiGatewayDomain } = props;
+    const slug = domainName.split('.')[0];
 
-    // --- Route 53: Look up parent hosted zone ---
     const hostedZone = route53.HostedZone.fromLookup(this, 'HostedZone', {
       domainName: parentDomainName,
     });
 
-    // --- DynamoDB Table ---
     const table = new dynamodb.Table(this, 'SiteTable', {
-      tableName: 'SiteTable',
+      tableName: `${slug}-table`,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -39,7 +38,6 @@ export class TributeSiteStack extends cdk.Stack {
       timeToLiveAttribute: 'expiresAt',
     });
 
-    // --- S3: Site Bucket ---
     const siteBucket = new s3.Bucket(this, 'SiteBucket', {
       bucketName: `${domainName}-site-${this.account}-${this.region}`,
       publicReadAccess: false,
@@ -49,7 +47,6 @@ export class TributeSiteStack extends cdk.Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-    // --- S3: Media Bucket ---
     const mediaBucket = new s3.Bucket(this, 'MediaBucket', {
       bucketName: `${domainName}-media-${this.account}-${this.region}`,
       publicReadAccess: false,
@@ -66,13 +63,11 @@ export class TributeSiteStack extends cdk.Stack {
       ],
     });
 
-    // --- ACM Certificate ---
     const certificate = new acm.Certificate(this, 'SiteCertificate', {
       domainName: domainName,
       validation: acm.CertificateValidation.fromDns(hostedZone),
     });
 
-    // --- CloudFront Distribution ---
     const additionalBehaviors: Record<string, cloudfront.BehaviorOptions> = {
       '/media/*': {
         origin: origins.S3BucketOrigin.withOriginAccessControl(mediaBucket),
@@ -90,7 +85,6 @@ export class TributeSiteStack extends cdk.Stack {
       },
     };
 
-    // Add API Gateway origin if domain is provided
     if (apiGatewayDomain) {
       additionalBehaviors['/api/*'] = {
         origin: new origins.HttpOrigin(apiGatewayDomain, {
@@ -104,7 +98,7 @@ export class TributeSiteStack extends cdk.Stack {
     }
 
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
-      comment: `Tribute site for ${domainName}`,
+      comment: `Site: ${domainName}`,
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(siteBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -134,14 +128,12 @@ export class TributeSiteStack extends cdk.Stack {
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
     });
 
-    // --- Route 53: A Record for subdomain ---
     new route53.ARecord(this, 'SubdomainAliasRecord', {
       zone: hostedZone,
       recordName: domainName,
       target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
     });
 
-    // --- Outputs ---
     new cdk.CfnOutput(this, 'SiteBucketName', { value: siteBucket.bucketName });
     new cdk.CfnOutput(this, 'MediaBucketName', { value: mediaBucket.bucketName });
     new cdk.CfnOutput(this, 'DistributionId', { value: distribution.distributionId });

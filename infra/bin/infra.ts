@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { TributeSiteStack } from '../lib/site-stack';
+import { SiteStack } from '../lib/site-stack';
 
 const app = new cdk.App();
 
@@ -19,15 +19,16 @@ if (!siteDomain || !parentDomain) {
   throw new Error('Set SITE_DOMAIN and PARENT_DOMAIN environment variables.');
 }
 
+const slug = siteDomain.split('.')[0];
 const apiGatewayDomain = app.node.tryGetContext('apiGatewayDomain') as string | undefined;
 
-new TributeSiteStack(app, 'TributeSiteStack', {
+new SiteStack(app, `${slug}-site`, {
   env: { account, region },
   domainName: siteDomain,
   parentDomainName: parentDomain,
   apiGatewayDomain: apiGatewayDomain || undefined,
   tags: {
-    Project: 'TributeSite',
+    Project: `${slug}-site`,
     Environment: 'Production',
     ManagedBy: 'CDK',
   },
