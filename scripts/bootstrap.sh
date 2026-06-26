@@ -15,11 +15,12 @@ set -euo pipefail
 #   ./scripts/bootstrap.sh
 
 REGION="us-east-1"
-CDK_STACK="TributeSiteStack"
-SAM_STACK="site-backend"
+SLUG="${SITE_DOMAIN%%.*}"
+CDK_STACK="${SLUG}-site"
+SAM_STACK="${SLUG}-backend"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "=== Tribute Site — Bootstrap ==="
+echo "=== Site Bootstrap: ${SLUG} ==="
 
 for var in CDK_DEFAULT_ACCOUNT SITE_DOMAIN PARENT_DOMAIN PARTY_CODE ADMIN_CODE JWT_SECRET; do
   if [ -z "${!var:-}" ]; then
