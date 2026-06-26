@@ -186,6 +186,9 @@ def handle_post_message(event):
     return _response(201, {"id": message_id, "createdAt": now})
 
 
+_ALLOWED_UPLOAD_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4"}
+
+
 def handle_message_upload_url(event):
     session = auth.require_auth(event)
     if not session:
@@ -194,6 +197,9 @@ def handle_message_upload_url(event):
     body = _parse_body(event)
     if not body or not body.get("filename") or not body.get("contentType"):
         return _response(400, {"error": "Provide 'filename' and 'contentType'"})
+
+    if body["contentType"] not in _ALLOWED_UPLOAD_TYPES:
+        return _response(400, {"error": "Unsupported content type"})
 
     import ulid as ulid_mod
 
@@ -261,6 +267,9 @@ def handle_upload_url(event):
     body = _parse_body(event)
     if not body or not body.get("filename") or not body.get("contentType"):
         return _response(400, {"error": "Provide 'filename' and 'contentType'"})
+
+    if body["contentType"] not in _ALLOWED_UPLOAD_TYPES:
+        return _response(400, {"error": "Unsupported content type"})
 
     import ulid as ulid_mod
 

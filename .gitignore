@@ -37,3 +37,6 @@ playwright-report/
 
 # Worktrees
 .worktrees/
+
+# Docs (local planning only)
+docs/

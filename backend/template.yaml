@@ -10,8 +10,10 @@ Parameters:
     Type: String
   PartyCode:
     Type: String
+    NoEcho: true
   AdminCode:
     Type: String
+    NoEcho: true
   JwtSecret:
     Type: String
     NoEcho: true
