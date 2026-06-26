@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# One-time bootstrap for the Tribute Site.
+# One-time bootstrap for a site deployment.
 #
 # Prerequisites: AWS CLI, CDK CLI, SAM CLI, Node.js 20+, Python 3.13
 #
