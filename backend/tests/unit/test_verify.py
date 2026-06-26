@@ -8,7 +8,7 @@ from api import app
 
 class TestVerifyWithPartyCode:
     def test_valid_party_code_returns_200_with_cookie(self, make_event):
-        event = make_event("POST", "/api/verify", body={"code": "dad80"})
+        event = make_event("POST", "/api/verify", body={"code": "test-party-code"})
         result = app.lambda_handler(event, None)
 
         assert result["statusCode"] == 200

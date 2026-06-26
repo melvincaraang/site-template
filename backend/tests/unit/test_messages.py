@@ -34,7 +34,7 @@ class TestGetMessages:
         data = json.loads(result["body"])
         assert len(data["messages"]) == 1
         assert data["messages"][0]["author"] == "Alice"
-        assert data["messages"][0]["photoUrl"] == "https://dad.melvinit.com/message-photos/photo1.jpg"
+        assert data["messages"][0]["photoUrl"] == "https://example.com/message-photos/photo1.jpg"
 
     def test_unauthenticated_returns_401(self, make_event):
         event = make_event("GET", "/api/messages")
