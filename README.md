@@ -4,6 +4,8 @@ A reusable template for a password-protected event or content site. Features: ac
 
 Designed to be cloned and customized per-site. Replace the frontend pages for your content; the infrastructure and auth plumbing reuse unchanged.
 
+**New here? Start with [USAGE.md](USAGE.md)** — the start-to-finish guide (cloning, gated vs. public sites, customizing, local dev). This README covers the AWS/GitHub deploy setup.
+
 ## Prerequisites
 
 Install these before your first deploy:
@@ -60,7 +62,10 @@ Open the role you just created → **Trust relationships** → **Edit trust poli
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:YOUR_GITHUB_ORG/YOUR_REPO_NAME:*"
+          "token.actions.githubusercontent.com:sub": [
+            "repo:YOUR_GITHUB_ORG/YOUR_REPO_NAME:*",
+            "repo:YOUR_SUB_CLAIM_PREFIX:*"
+          ]
         }
       }
     }
@@ -69,6 +74,24 @@ Open the role you just created → **Trust relationships** → **Edit trust poli
 ```
 
 Replace `YOUR_ACCOUNT_ID`, `YOUR_GITHUB_ORG`, and `YOUR_REPO_NAME` with your values. Save.
+
+> **Gotcha (newer repos): ID-suffixed OIDC subjects.** GitHub now issues OIDC
+> tokens for newly created repos with immutable ID-suffixed subjects, e.g.
+> `repo:owner@123456/name@987654:ref:refs/heads/main` — which does **not**
+> match the classic `repo:owner/name:*` pattern, and fails with
+> `Not authorized to perform sts:AssumeRoleWithWebIdentity`. Find your repo's
+> actual prefix with:
+>
+> ```bash
+> gh api repos/OWNER/REPO/actions/oidc/customization/sub -q .sub_claim_prefix
+> ```
+>
+> and use it as `YOUR_SUB_CLAIM_PREFIX` above (keep both patterns; the ID form
+> also survives repo renames). Older repos keep the classic prefix, in which
+> case the second entry is redundant but harmless.
+>
+> Also note: a freshly created role can take a few minutes to propagate —
+> if the very first workflow run fails to assume it, re-run before debugging.
 
 Copy the role ARN (looks like `arn:aws:iam::123456789012:role/github-actions-deploy`) — you'll need it in the next step.
 
@@ -103,6 +126,26 @@ export JWT_SECRET=$(openssl rand -hex 32)
 ```
 
 The script prints an API domain at the end (e.g. `abc123.execute-api.us-east-1.amazonaws.com`). Copy it and set it as the `API_GATEWAY_DOMAIN` GitHub secret now.
+
+### Alternative: first deploy entirely in GitHub Actions (no local tooling)
+
+The CDK stack treats `apiGatewayDomain` as optional (it only skips the
+CloudFront `/api/*` behavior), so the chicken-and-egg can be resolved with two
+workflow passes instead of running bootstrap.sh locally:
+
+1. Configure everything from step 2 **except** `API_GATEWAY_DOMAIN`, then push
+   to `main`. The workflow deploys infra (no API route yet), the SAM backend
+   (which creates the API Gateway), and the frontend.
+2. Read the API domain from the backend stack output and set the secret:
+
+   ```bash
+   aws cloudformation describe-stacks --stack-name <slug>-backend --region us-east-1 \
+     --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text
+   gh secret set API_GATEWAY_DOMAIN --body '<host part of that URL>'
+   ```
+
+3. Re-run the workflow (`gh run rerun <id>` or push again). CloudFront picks up
+   the `/api/*` route and the site is fully live.
 
 ## 4. Subsequent Deploys
 

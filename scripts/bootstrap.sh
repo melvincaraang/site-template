@@ -15,19 +15,20 @@ set -euo pipefail
 #   ./scripts/bootstrap.sh
 
 REGION="us-east-1"
-SLUG="${SITE_DOMAIN%%.*}"
-CDK_STACK="${SLUG}-site"
-SAM_STACK="${SLUG}-backend"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-
-echo "=== Site Bootstrap: ${SLUG} ==="
 
 for var in CDK_DEFAULT_ACCOUNT SITE_DOMAIN PARENT_DOMAIN PARTY_CODE ADMIN_CODE JWT_SECRET; do
   if [ -z "${!var:-}" ]; then
-    echo "ERROR: $var is not set." >&2
+    echo "ERROR: $var is not set. See the usage block at the top of this script." >&2
     exit 1
   fi
 done
+
+SLUG="${SITE_DOMAIN%%.*}"
+CDK_STACK="${SLUG}-site"
+SAM_STACK="${SLUG}-backend"
+
+echo "=== Site Bootstrap: ${SLUG} ==="
 
 echo "Account: $CDK_DEFAULT_ACCOUNT"
 echo "Domain:  $SITE_DOMAIN"
@@ -66,7 +67,14 @@ echo "  DistributionId: $DIST_ID"
 # --- Step 4: SAM Deploy ---
 echo "--- 4/7: SAM Build & Deploy ---"
 cd "$ROOT/backend"
-sam build --use-container
+# Containerized build when Docker is available; otherwise build natively
+# (valid when deps are pure-Python and the host Python matches the runtime).
+if command -v docker >/dev/null 2>&1; then
+  sam build --use-container
+else
+  echo "  Docker not found — building natively."
+  sam build
+fi
 sam deploy \
   --stack-name "$SAM_STACK" \
   --resolve-s3 \
