@@ -1,8 +1,9 @@
 import json
 import os
-import jwt
 import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import jwt
 
 from api import app
 
@@ -22,7 +23,15 @@ class TestGetMedia:
         mock_table = MagicMock()
         mock_table.query.return_value = {
             "Items": [
-                {"PK": "MEDIA", "SK": "MEDIA#01ABC", "s3Key": "photos/family.jpg", "type": "photo", "caption": "Family photo", "order": 1, "createdAt": "2026-03-01T12:00:00Z"},
+                {
+                    "PK": "MEDIA",
+                    "SK": "MEDIA#01ABC",
+                    "s3Key": "photos/family.jpg",
+                    "type": "photo",
+                    "caption": "Family photo",
+                    "order": 1,
+                    "createdAt": "2026-03-01T12:00:00Z",
+                },
             ]
         }
         mock_get_table.return_value = mock_table
@@ -50,7 +59,8 @@ class TestAdminUploadUrl:
         mock_boto_client.return_value = mock_s3
 
         event = make_event(
-            "POST", "/api/admin/media/upload-url",
+            "POST",
+            "/api/admin/media/upload-url",
             body={"filename": "photo.jpg", "contentType": "image/jpeg"},
             headers={"Cookie": _auth_cookie("admin")},
         )
@@ -63,7 +73,8 @@ class TestAdminUploadUrl:
 
     def test_guest_cannot_upload(self, make_event):
         event = make_event(
-            "POST", "/api/admin/media/upload-url",
+            "POST",
+            "/api/admin/media/upload-url",
             body={"filename": "photo.jpg", "contentType": "image/jpeg"},
             headers={"Cookie": _auth_cookie("guest")},
         )
@@ -78,7 +89,8 @@ class TestAdminPostMedia:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "POST", "/api/admin/media",
+            "POST",
+            "/api/admin/media",
             body={"s3Key": "photos/family.jpg", "type": "photo", "caption": "Family photo"},
             headers={"Cookie": _auth_cookie("admin")},
         )
@@ -101,7 +113,8 @@ class TestAdminDeleteMedia:
         mock_boto_client.return_value = mock_s3
 
         event = make_event(
-            "DELETE", "/api/admin/media/01ABC",
+            "DELETE",
+            "/api/admin/media/01ABC",
             headers={"Cookie": _auth_cookie("admin")},
         )
         result = app.lambda_handler(event, None)

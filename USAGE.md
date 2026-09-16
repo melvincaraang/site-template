@@ -60,20 +60,52 @@ sites. For a public site (e.g. a church or business):
 
 ## 4. Local development
 
-`frontend/` proxies `/api` → `localhost:3000` (see `vite.config.ts`).
-Two options for the backend:
-
-- **SAM local** (needs Docker): `backend/scripts/start-local-api.sh`.
-- **No Docker**: write a small Node emulator of the endpoints you actually use
-  and persist to a JSON file (see `scripts/dev-api.mjs` in the proxchurch repo
-  for a working example). Zero AWS dependencies, instant startup.
+No Docker or AWS needed. The backend dev server runs the real Lambda handler
+with an in-memory DynamoDB (moto):
 
 ```bash
-cd frontend && npm install && npm run dev   # localhost:5173
+cd backend
+uv venv .venv --python 3.13
+uv pip install --python .venv/bin/python -r api/requirements.txt -r tests/requirements.txt
+.venv/bin/python scripts/dev_server.py      # :3000 — codes "party" (guest) and "admin"
+
+cd frontend && npm install && npm run dev   # :5173, proxies /api → :3000
 ```
 
-Before pushing, run what CI runs: `npm run lint && npm run check && npm run build`
-in `frontend/`, `python -m pytest tests/unit` in `backend/`.
+Before pushing, run what CI runs:
+
+```bash
+cd backend  && .venv/bin/ruff check . && .venv/bin/ruff format --check . && .venv/bin/mypy && .venv/bin/python -m pytest --cov
+cd frontend && npm run lint && npm run check && npm run test:unit -- --run && npm run build && npm run check:size
+cd frontend && npm run test:e2e             # Playwright + axe; starts both servers itself
+```
+
+## 4b. CI gate chain
+
+`.github/workflows/ci.yml` runs on every pull request and push to `main`, and is called by
+`deploy.yml` so nothing deploys that did not pass the same checks:
+
+| Job | What it checks | Blocking |
+|-----|----------------|----------|
+| frontend | prettier, eslint, svelte-check, vitest, build, gzipped bundle budget (`scripts/check-bundle-size.mjs`) | yes |
+| backend | ruff lint+format, mypy, pytest with a coverage floor (`pyproject.toml`), Lambda import with prod requirements only, `sam validate --lint` | yes |
+| e2e | Playwright against the local stack incl. an axe accessibility pass (serious/critical fail) | yes |
+| infra | tsc, jest security assertions + cdk-nag AwsSolutions (suppressions carry reasons), `cdk synth` without AWS lookups | yes |
+| security | gitleaks secret scan (blocking); semgrep, pip-audit, npm audit (advisory) | partly |
+| workflows | actionlint | yes |
+| ci-status | aggregates the above; the one status check to require on `main` | yes |
+
+`backend/tests/unit/test_consistency.py` fails when a route in `api/app.py` has no
+`template.yaml` event, when `backend/requirements.txt` drifts from `api/requirements.txt`
+(SAM installs from the root one), or when a handler reads an env var the template does not set.
+
+`deploy.yml` (push to `main`) calls ci.yml, then deploys CDK → SAM → S3, and ends with a
+smoke test of the live site. Deploy jobs are skipped until the `SITE_DOMAIN` repo variable
+exists, so a fresh clone stays green. Actions are pinned to commit SHAs; Dependabot
+(`.github/dependabot.yml`) updates npm, pip, and Actions weekly.
+
+Recommended repo settings: a `main` ruleset that requires a pull request and the `ci-status`
+check (free on public repos; private repos need GitHub Pro).
 
 ## 5. Deploy
 
@@ -97,3 +129,5 @@ push-to-deploy). Two first-deploy paths:
   trust-policy gotcha box in README step 1c.
 - **`sam build --use-container` needs Docker**; the native fallback is fine
   while backend deps are pure Python and your Python matches the Lambda runtime.
+- **SAM installs from `backend/requirements.txt`**, not `api/requirements.txt`. Keep them
+  identical (a unit test enforces it).

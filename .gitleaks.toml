@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test fixtures and documented placeholders"
+paths = [
+  '''backend/tests/.*''',
+  '''frontend/e2e/.*''',
+  '''backend/scripts/dev_server\.py''',
+]
+regexes = [
+  '''dev-jwt-secret-not-for-production''',
+  '''test-jwt-secret-key''',
+]

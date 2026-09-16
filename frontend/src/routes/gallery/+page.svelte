@@ -48,9 +48,9 @@
 	</a>
 
 	{#if loading}
-		<p class="text-primary/60 text-center text-lg italic">Loading...</p>
+		<p class="text-primary/70 text-center text-lg italic">Loading...</p>
 	{:else if media.length === 0}
-		<p class="text-primary/60 text-center text-lg">No photos yet. Check back soon!</p>
+		<p class="text-primary/70 text-center text-lg">No photos yet. Check back soon!</p>
 	{:else}
 		<div class="columns-1 gap-4 sm:columns-2 lg:columns-3">
 			{#each media as item (item.id)}
@@ -61,11 +61,7 @@
 					{#if item.type === 'video'}
 						<div class="relative">
 							<!-- svelte-ignore a11y_media_has_caption -->
-							<video
-								preload="metadata"
-								class="w-full transition-all"
-								src={item.url}
-							></video>
+							<video preload="metadata" class="w-full transition-all" src={item.url}></video>
 							<div class="absolute inset-0 flex items-center justify-center">
 								<div class="rounded-full bg-black/50 p-3 text-white">
 									<svg class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
@@ -75,12 +71,7 @@
 							</div>
 						</div>
 					{:else}
-						<img
-							src={item.url}
-							alt={item.caption}
-							class="w-full transition-all"
-							loading="lazy"
-						/>
+						<img src={item.url} alt={item.caption} class="w-full transition-all" loading="lazy" />
 					{/if}
 					{#if item.caption}
 						<p class="text-primary px-3 py-2 text-lg">{item.caption}</p>

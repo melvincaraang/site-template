@@ -15,6 +15,7 @@ os.environ["CLOUDFRONT_DOMAIN"] = "example.com"
 @pytest.fixture()
 def make_event():
     """Creates an API Gateway event."""
+
     def _make_event(method="GET", path="/", body=None, headers=None, path_parameters=None):
         return {
             "httpMethod": method,
@@ -32,4 +33,5 @@ def make_event():
                 "stage": "prod",
             },
         }
+
     return _make_event

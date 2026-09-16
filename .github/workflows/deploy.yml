@@ -1,208 +1,170 @@
+# Deploys main after the full CI gate chain passes. Serialized so two pushes
+# cannot overwrite each other's backend bundle. Deploy jobs are skipped when
+# the repo has no SITE_DOMAIN variable, so a bare clone of the template stays
+# green until it is configured (see README).
 name: Deploy Site
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
-permissions:
-  id-token: write
-  contents: read
+permissions: {}
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   AWS_REGION: us-east-1
 
 jobs:
-  # ── Build & Test (runs on every PR and push) ──────────────
   ci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      # Frontend
-      - name: Install frontend dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Lint frontend
-        working-directory: ./frontend
-        run: npm run lint
-
-      - name: Type-check frontend
-        working-directory: ./frontend
-        run: npm run check
-
-      - name: Build frontend
-        working-directory: ./frontend
-        run: npm run build
-
-      - name: Unit test frontend
-        working-directory: ./frontend
-        run: npm run test:unit -- --run
-
-      # Backend
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install backend dependencies
-        working-directory: ./backend
-        run: pip install -r api/requirements.txt -r tests/requirements.txt
-
-      - name: Test backend
-        working-directory: ./backend
-        run: python -m pytest tests/unit -v
-
-      # Infra
-      - name: Install CDK dependencies
-        working-directory: ./infra
-        run: npm ci
-
-      - name: Build CDK
-        working-directory: ./infra
-        run: npm run build
-
-      # Upload frontend build for deploy job
-      - name: Upload frontend build
-        if: github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: ./frontend/build
-          retention-days: 1
-
-  # ── Deploy CDK Infrastructure ─────────────────────────────
   deploy-infra:
-    if: github.event_name == 'push'
     needs: ci
+    if: vars.SITE_DOMAIN != ''
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     outputs:
       site-bucket: ${{ steps.outputs.outputs.site-bucket }}
       media-bucket: ${{ steps.outputs.outputs.media-bucket }}
       distribution-id: ${{ steps.outputs.outputs.distribution-id }}
       table-name: ${{ steps.outputs.outputs.table-name }}
+      slug: ${{ steps.slug.outputs.value }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
-
-      - name: Install CDK dependencies
-        working-directory: ./infra
-        run: npm ci
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+          cache: npm
+          cache-dependency-path: infra/package-lock.json
+      - run: npm ci
+        working-directory: infra
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-
       - name: Derive site slug
         id: slug
-        run: echo "value=$(echo '${{ vars.SITE_DOMAIN }}' | cut -d. -f1)" >> "$GITHUB_OUTPUT"
-
+        env:
+          SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+        run: echo "value=${SITE_DOMAIN%%.*}" >> "$GITHUB_OUTPUT"
       - name: CDK deploy
-        working-directory: ./infra
+        working-directory: infra
         env:
           CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
           SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
           PARENT_DOMAIN: ${{ vars.PARENT_DOMAIN }}
-        run: |
-          npx cdk deploy ${{ steps.slug.outputs.value }}-site \
-            --require-approval never \
-            -c apiGatewayDomain=${{ secrets.API_GATEWAY_DOMAIN }}
-
+          API_GATEWAY_DOMAIN: ${{ secrets.API_GATEWAY_DOMAIN }}
+          SLUG: ${{ steps.slug.outputs.value }}
+        run: npx cdk deploy "$SLUG-site" --require-approval never -c "apiGatewayDomain=$API_GATEWAY_DOMAIN"
       - name: Extract stack outputs
         id: outputs
+        env:
+          SLUG: ${{ steps.slug.outputs.value }}
         run: |
-          OUTPUTS=$(aws cloudformation describe-stacks \
-            --stack-name ${{ steps.slug.outputs.value }}-site \
-            --query "Stacks[0].Outputs" \
-            --output json)
+          OUTPUTS=$(aws cloudformation describe-stacks --stack-name "$SLUG-site" --query "Stacks[0].Outputs" --output json)
+          get_output() { echo "$OUTPUTS" | jq -r ".[] | select(.OutputKey==\"$1\") | .OutputValue"; }
+          {
+            echo "site-bucket=$(get_output SiteBucketName)"
+            echo "media-bucket=$(get_output MediaBucketName)"
+            echo "distribution-id=$(get_output DistributionId)"
+            echo "table-name=$(get_output TableName)"
+          } >> "$GITHUB_OUTPUT"
 
-          get_output() {
-            echo "$OUTPUTS" | jq -r ".[] | select(.OutputKey==\"$1\") | .OutputValue"
-          }
-
-          echo "site-bucket=$(get_output SiteBucketName)" >> "$GITHUB_OUTPUT"
-          echo "media-bucket=$(get_output MediaBucketName)" >> "$GITHUB_OUTPUT"
-          echo "distribution-id=$(get_output DistributionId)" >> "$GITHUB_OUTPUT"
-          echo "table-name=$(get_output TableName)" >> "$GITHUB_OUTPUT"
-
-  # ── Deploy SAM Backend ────────────────────────────────────
   deploy-backend:
-    if: github.event_name == 'push'
     needs: deploy-infra
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.13'
-
-      - uses: aws-actions/setup-sam@v2
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/setup-sam@f84ec7d548307efafe33230528756de3c5841a17 # v2
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Derive site slug
-        id: slug
-        run: echo "value=$(echo '${{ vars.SITE_DOMAIN }}' | cut -d. -f1)" >> "$GITHUB_OUTPUT"
-
-      - name: SAM build
-        working-directory: ./backend
-        run: sam build --use-container
-
+      - run: sam build --use-container
+        working-directory: backend
       - name: SAM deploy
-        working-directory: ./backend
+        working-directory: backend
+        env:
+          SLUG: ${{ needs.deploy-infra.outputs.slug }}
+          TABLE_NAME: ${{ needs.deploy-infra.outputs.table-name }}
+          MEDIA_BUCKET: ${{ needs.deploy-infra.outputs.media-bucket }}
+          PARTY_CODE: ${{ secrets.PARTY_CODE }}
+          ADMIN_CODE: ${{ secrets.ADMIN_CODE }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
         run: |
           sam deploy \
-            --stack-name ${{ steps.slug.outputs.value }}-backend \
+            --stack-name "$SLUG-backend" \
             --resolve-s3 \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides \
-              TableName=${{ needs.deploy-infra.outputs.table-name }} \
-              MediaBucket=${{ needs.deploy-infra.outputs.media-bucket }} \
-              PartyCode=${{ secrets.PARTY_CODE }} \
-              AdminCode=${{ secrets.ADMIN_CODE }} \
-              JwtSecret=${{ secrets.JWT_SECRET }} \
-              CloudFrontDomain=${{ vars.SITE_DOMAIN }}
+              "TableName=$TABLE_NAME" \
+              "MediaBucket=$MEDIA_BUCKET" \
+              "PartyCode=$PARTY_CODE" \
+              "AdminCode=$ADMIN_CODE" \
+              "JwtSecret=$JWT_SECRET" \
+              "CloudFrontDomain=$SITE_DOMAIN"
 
-  # ── Deploy Frontend ───────────────────────────────────────
   deploy-frontend:
-    if: github.event_name == 'push'
     needs: deploy-infra
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: frontend-build
           path: ./build
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+      - name: Sync to S3
+        env:
+          BUCKET: ${{ needs.deploy-infra.outputs.site-bucket }}
+        run: aws s3 sync ./build/ "s3://$BUCKET" --delete
+      - name: Invalidate CloudFront
+        env:
+          DIST_ID: ${{ needs.deploy-infra.outputs.distribution-id }}
+        run: aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
 
-      - name: Deploy to S3
-        run: aws s3 sync ./build/ s3://${{ needs.deploy-infra.outputs.site-bucket }} --delete
-
-      - name: Invalidate CloudFront cache
+  smoke-test:
+    name: Post-deploy smoke test
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Site and API respond correctly
+        env:
+          SITE: https://${{ vars.SITE_DOMAIN }}
         run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ needs.deploy-infra.outputs.distribution-id }} \
-            --paths "/*"
+          set -euo pipefail
+          # CloudFront invalidation is eventually consistent; allow a short settle.
+          for attempt in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/index.html -w '%{http_code}' "$SITE/")
+            grep -q '<title>' /tmp/index.html && [ "$code" = "200" ] && break
+            echo "attempt $attempt: site returned $code; retrying"; sleep 10
+          done
+          [ "$code" = "200" ] || { echo "::error::site returned $code"; exit 1; }
+          session=$(curl -s -w '\n%{http_code}' "$SITE/api/session")
+          echo "$session" | tail -1 | grep -qx 401 || { echo "::error::/api/session should be 401, got: $session"; exit 1; }
+          echo "$session" | head -1 | grep -q '"error"' || { echo "::error::/api/session did not return JSON"; exit 1; }
+          bogus=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$SITE/api/verify" -H 'Content-Type: application/json' -d '{"code":"definitely-not-the-code"}')
+          [ "$bogus" = "403" ] || { echo "::error::wrong access code should be 403, got $bogus (Lambda import failure shows as 502)"; exit 1; }
+          echo "Smoke test passed: $SITE"

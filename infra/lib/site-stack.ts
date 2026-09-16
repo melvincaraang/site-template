@@ -7,6 +7,7 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 export interface SiteStackProps extends cdk.StackProps {
   readonly domainName: string;
@@ -36,6 +37,8 @@ export class SiteStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       timeToLiveAttribute: 'expiresAt',
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
 
     const siteBucket = new s3.Bucket(this, 'SiteBucket', {
@@ -45,6 +48,7 @@ export class SiteStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
     });
 
     const mediaBucket = new s3.Bucket(this, 'MediaBucket', {
@@ -54,6 +58,7 @@ export class SiteStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
       cors: [
         {
           allowedMethods: [s3.HttpMethods.PUT],
@@ -68,21 +73,29 @@ export class SiteStack extends cdk.Stack {
       validation: acm.CertificateValidation.fromDns(hostedZone),
     });
 
+    // Uploaded media: the load-bearing header is `nosniff`, which stops a
+    // browser from content-sniffing an uploaded image as HTML/JS. Also framed-
+    // out and given a locked-down CSP so a served object can't act as a page.
+    const mediaSecurityHeaders = new cloudfront.ResponseHeadersPolicy(this, 'MediaSecurityHeaders', {
+      responseHeadersPolicyName: `${slug}-media-security-headers`,
+      securityHeadersBehavior: {
+        contentSecurityPolicy: { override: true, contentSecurityPolicy: "default-src 'none'" },
+        contentTypeOptions: { override: true },
+        frameOptions: { override: true, frameOption: cloudfront.HeadersFrameOption.DENY },
+      },
+    });
+
+    const mediaBehavior: cloudfront.BehaviorOptions = {
+      origin: origins.S3BucketOrigin.withOriginAccessControl(mediaBucket),
+      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+      compress: true,
+      cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+      responseHeadersPolicy: mediaSecurityHeaders,
+    };
     const additionalBehaviors: Record<string, cloudfront.BehaviorOptions> = {
-      '/media/*': {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(mediaBucket),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-        compress: true,
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-      },
-      '/message-photos/*': {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(mediaBucket),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-        compress: true,
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-      },
+      '/media/*': mediaBehavior,
+      '/message-photos/*': mediaBehavior,
     };
 
     if (apiGatewayDomain) {
@@ -97,6 +110,46 @@ export class SiteStack extends cdk.Stack {
       };
     }
 
+    // Security response headers for the site (HTML/JS/CSS). The CSP keeps
+    // 'unsafe-inline' for script/style because SvelteKit's static adapter emits
+    // inline hydration scripts; it still constrains object/base/frame-ancestors/
+    // form-action. Sites that load a third-party script (a hosted sign-in
+    // widget, say) add its origins to script-src/connect-src/frame-src here.
+    const securityHeaders = new cloudfront.ResponseHeadersPolicy(this, 'SecurityHeadersPolicy', {
+      responseHeadersPolicyName: `${slug}-security-headers`,
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          override: true,
+          contentSecurityPolicy: [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: blob:",
+            "media-src 'self' blob:",
+            "font-src 'self' data:",
+            "connect-src 'self'",
+            "frame-src 'none'",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+            "object-src 'none'",
+            "form-action 'self'",
+          ].join('; '),
+        },
+        strictTransportSecurity: {
+          override: true,
+          accessControlMaxAge: cdk.Duration.days(365),
+          includeSubdomains: true,
+          preload: false,
+        },
+        contentTypeOptions: { override: true },
+        frameOptions: { override: true, frameOption: cloudfront.HeadersFrameOption.DENY },
+        referrerPolicy: {
+          override: true,
+          referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+        },
+      },
+    });
+
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       comment: `Site: ${domainName}`,
       defaultBehavior: {
@@ -105,19 +158,18 @@ export class SiteStack extends cdk.Stack {
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         compress: true,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        responseHeadersPolicy: securityHeaders,
       },
       additionalBehaviors,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       certificate: certificate,
       domainNames: [domainName],
       defaultRootObject: 'index.html',
+      // Only 404 is rewritten to the SPA shell. CloudFront error responses are
+      // distribution-wide, so rewriting 403 would also mask legitimate 403s
+      // from the /api/* behavior (e.g. failed logins). The buckets grant
+      // CloudFront s3:ListBucket below so missing objects 404 instead of 403.
       errorResponses: [
-        {
-          httpStatus: 403,
-          responseHttpStatus: 200,
-          responsePagePath: '/index.html',
-          ttl: cdk.Duration.minutes(0),
-        },
         {
           httpStatus: 404,
           responseHttpStatus: 200,
@@ -127,6 +179,21 @@ export class SiteStack extends cdk.Stack {
       ],
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
     });
+
+    for (const bucket of [siteBucket, mediaBucket]) {
+      bucket.addToResourcePolicy(
+        new iam.PolicyStatement({
+          actions: ['s3:ListBucket'],
+          resources: [bucket.bucketArn],
+          principals: [new iam.ServicePrincipal('cloudfront.amazonaws.com')],
+          conditions: {
+            StringEquals: {
+              'AWS:SourceArn': `arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`,
+            },
+          },
+        })
+      );
+    }
 
     new route53.ARecord(this, 'SubdomainAliasRecord', {
       zone: hostedZone,

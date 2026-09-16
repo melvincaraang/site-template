@@ -1,7 +1,7 @@
-import json
-import jwt
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import jwt
 
 from api import app
 
