@@ -56,7 +56,7 @@
 
 {#if authState.checking}
 	<div class="flex min-h-screen items-center justify-center">
-		<p class="text-primary/60 text-xl italic">Checking your invitation...</p>
+		<p class="text-primary/70 text-xl italic">Checking your invitation...</p>
 	</div>
 {:else}
 	<div class="flex min-h-screen flex-col items-center justify-center px-4">
@@ -74,7 +74,7 @@
 						type={adminMode ? 'password' : 'text'}
 						bind:value={code}
 						placeholder={adminMode ? 'Enter admin code' : 'Enter access code'}
-						class="border-accent/40 text-primary placeholder:text-primary/40 focus:border-accent focus:ring-accent bg-surface/50 w-full rounded-md border px-4 py-3 text-center text-lg"
+						class="border-accent/40 text-primary placeholder:text-primary/70 focus:border-accent focus:ring-accent bg-surface/50 w-full rounded-md border px-4 py-3 text-center text-lg"
 					/>
 
 					{#if error}
@@ -84,7 +84,7 @@
 					<button
 						type="submit"
 						disabled={loading || !code.trim()}
-						class="bg-accent hover:bg-accent-light text-white w-full rounded-md px-6 py-3 text-lg transition-colors disabled:opacity-50"
+						class="bg-accent hover:bg-accent-light w-full rounded-md px-6 py-3 text-lg text-white transition-colors disabled:opacity-50"
 					>
 						{loading ? 'Verifying...' : adminMode ? 'Sign In' : 'Enter'}
 					</button>
@@ -97,7 +97,7 @@
 						code = '';
 						error = '';
 					}}
-					class="text-primary/40 hover:text-primary/70 mt-4 text-sm underline"
+					class="text-primary/70 hover:text-primary/70 mt-4 text-sm underline"
 				>
 					{adminMode ? 'Back to guest login' : 'Admin login'}
 				</button>

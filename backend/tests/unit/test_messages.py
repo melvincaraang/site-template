@@ -1,8 +1,9 @@
 import json
 import os
-import jwt
 import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import jwt
 
 from api import app
 
@@ -22,7 +23,14 @@ class TestGetMessages:
         mock_table = MagicMock()
         mock_table.query.return_value = {
             "Items": [
-                {"PK": "MSG", "SK": "MSG#01ABC", "author": "Alice", "text": "Happy birthday!", "createdAt": "2026-03-01T12:00:00Z", "photoKey": "message-photos/photo1.jpg"},
+                {
+                    "PK": "MSG",
+                    "SK": "MSG#01ABC",
+                    "author": "Alice",
+                    "text": "Happy birthday!",
+                    "createdAt": "2026-03-01T12:00:00Z",
+                    "photoKey": "message-photos/photo1.jpg",
+                },
             ]
         }
         mock_get_table.return_value = mock_table
@@ -49,7 +57,8 @@ class TestPostMessage:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "POST", "/api/messages",
+            "POST",
+            "/api/messages",
             body={"author": "Bob", "text": "Many happy returns!"},
             headers={"Cookie": _auth_cookie()},
         )
@@ -69,7 +78,8 @@ class TestPostMessage:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "POST", "/api/messages",
+            "POST",
+            "/api/messages",
             body={"author": "Carol", "text": "Cheers!", "photoKey": "message-photos/abc123.jpg"},
             headers={"Cookie": _auth_cookie()},
         )
@@ -81,7 +91,8 @@ class TestPostMessage:
 
     def test_missing_fields_returns_400(self, make_event):
         event = make_event(
-            "POST", "/api/messages",
+            "POST",
+            "/api/messages",
             body={"author": "Bob"},
             headers={"Cookie": _auth_cookie()},
         )
@@ -97,7 +108,8 @@ class TestMessageUploadUrl:
         mock_boto.return_value = mock_s3
 
         event = make_event(
-            "POST", "/api/messages/upload-url",
+            "POST",
+            "/api/messages/upload-url",
             body={"filename": "selfie.jpg", "contentType": "image/jpeg"},
             headers={"Cookie": _auth_cookie("guest")},
         )
@@ -111,7 +123,8 @@ class TestMessageUploadUrl:
 
     def test_unauthenticated_returns_401(self, make_event):
         event = make_event(
-            "POST", "/api/messages/upload-url",
+            "POST",
+            "/api/messages/upload-url",
             body={"filename": "selfie.jpg", "contentType": "image/jpeg"},
         )
         result = app.lambda_handler(event, None)
@@ -125,19 +138,19 @@ class TestDeleteMessage:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "DELETE", "/api/messages/msg-123",
+            "DELETE",
+            "/api/messages/msg-123",
             headers={"Cookie": _auth_cookie("admin")},
         )
         result = app.lambda_handler(event, None)
 
         assert result["statusCode"] == 200
-        mock_table.delete_item.assert_called_once_with(
-            Key={"PK": "MSG", "SK": "MSG#msg-123"}
-        )
+        mock_table.delete_item.assert_called_once_with(Key={"PK": "MSG", "SK": "MSG#msg-123"})
 
     def test_guest_cannot_delete_message(self, make_event):
         event = make_event(
-            "DELETE", "/api/messages/msg-123",
+            "DELETE",
+            "/api/messages/msg-123",
             headers={"Cookie": _auth_cookie("guest")},
         )
         result = app.lambda_handler(event, None)

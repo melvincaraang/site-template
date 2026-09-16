@@ -185,31 +185,29 @@
 	<!-- Tabs -->
 	<div class="border-accent/30 mb-6 flex gap-4 border-b">
 		<button
-			class="pb-2 transition-colors"
-			class:border-b-2={activeTab === 'media'}
-			class:border-accent={activeTab === 'media'}
-			class:text-primary={activeTab === 'media'}
-			class:text-primary/50={activeTab !== 'media'}
+			class="pb-2 transition-colors {activeTab === 'media'
+				? 'border-accent text-primary border-b-2'
+				: 'text-primary/70'}"
 			onclick={() => (activeTab = 'media')}>Upload Media</button
 		>
 		<button
-			class="pb-2 transition-colors"
-			class:border-b-2={activeTab === 'tokens'}
-			class:border-accent={activeTab === 'tokens'}
-			class:text-primary={activeTab === 'tokens'}
-			class:text-primary/50={activeTab !== 'tokens'}
+			class="pb-2 transition-colors {activeTab === 'tokens'
+				? 'border-accent text-primary border-b-2'
+				: 'text-primary/70'}"
 			onclick={() => (activeTab = 'tokens')}>Access Tokens</button
 		>
 	</div>
 
 	{#if loading}
-		<p class="text-primary/60 italic">Loading...</p>
+		<p class="text-primary/70 italic">Loading...</p>
 	{:else if activeTab === 'media'}
 		<!-- Upload form -->
 		<div class="border-accent/30 mb-8 rounded-lg border bg-white/80 p-6">
 			<h2 class="font-display text-primary mb-4 text-xl">Upload Photos & Videos</h2>
 			<form onsubmit={handleUpload} class="space-y-4">
+				<label for="upload-files" class="sr-only">Photos and videos to upload</label>
 				<input
+					id="upload-files"
 					type="file"
 					accept="image/*,video/*"
 					multiple
@@ -225,7 +223,7 @@
 				<button
 					type="submit"
 					disabled={uploading || !uploadFiles?.length}
-					class="bg-accent hover:bg-accent-light text-white rounded-md px-6 py-2 disabled:opacity-50"
+					class="bg-accent hover:bg-accent-light rounded-md px-6 py-2 text-white disabled:opacity-50"
 				>
 					{uploading ? 'Uploading...' : 'Upload'}
 				</button>
@@ -275,7 +273,7 @@
 						<button
 							disabled={index === 0}
 							onclick={() => moveMedia(index, 'top')}
-							class="text-primary/40 hover:text-primary p-0.5 disabled:opacity-20"
+							class="text-primary/70 hover:text-primary p-0.5 disabled:opacity-20"
 							title="Move to top"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,7 +288,7 @@
 						<button
 							disabled={index === 0}
 							onclick={() => moveMedia(index, 'up')}
-							class="text-primary/40 hover:text-primary p-0.5 disabled:opacity-20"
+							class="text-primary/70 hover:text-primary p-0.5 disabled:opacity-20"
 							title="Move up"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -305,7 +303,7 @@
 						<button
 							disabled={index === media.length - 1}
 							onclick={() => moveMedia(index, 'down')}
-							class="text-primary/40 hover:text-primary p-0.5 disabled:opacity-20"
+							class="text-primary/70 hover:text-primary p-0.5 disabled:opacity-20"
 							title="Move down"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +318,7 @@
 						<button
 							disabled={index === media.length - 1}
 							onclick={() => moveMedia(index, 'bottom')}
-							class="text-primary/40 hover:text-primary p-0.5 disabled:opacity-20"
+							class="text-primary/70 hover:text-primary p-0.5 disabled:opacity-20"
 							title="Move to bottom"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -368,7 +366,7 @@
 				<button
 					type="submit"
 					disabled={creatingToken || !tokenLabel.trim()}
-					class="bg-accent hover:bg-accent-light text-white rounded-md px-6 py-2 disabled:opacity-50"
+					class="bg-accent hover:bg-accent-light rounded-md px-6 py-2 text-white disabled:opacity-50"
 				>
 					{creatingToken ? 'Creating...' : 'Create Link'}
 				</button>
@@ -382,7 +380,7 @@
 					<div class="flex items-center justify-between">
 						<div>
 							<p class="text-primary font-medium">{token.label || '(no label)'}</p>
-							<p class="text-primary/60 text-xs">
+							<p class="text-primary/70 text-xs">
 								Expires: {new Date(token.expiresAt * 1000).toLocaleDateString()}
 							</p>
 						</div>
@@ -397,7 +395,7 @@
 						</p>
 						<button
 							onclick={() => handleCopyLink(token.uuid)}
-							class="bg-accent hover:bg-accent-light text-white shrink-0 rounded px-3 py-1 text-xs transition-colors"
+							class="bg-accent hover:bg-accent-light shrink-0 rounded px-3 py-1 text-xs text-white transition-colors"
 						>
 							{copiedUuid === token.uuid ? 'Copied!' : 'Copy'}
 						</button>

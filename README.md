@@ -149,12 +149,17 @@ workflow passes instead of running bootstrap.sh locally:
 
 ## 4. Subsequent Deploys
 
-Push to `main`. GitHub Actions runs automatically:
+Open a pull request: `ci.yml` runs lint, type checks, unit tests, e2e + accessibility,
+cdk-nag, secret scanning, and audits, summarized in one `ci-status` check (see USAGE.md §4b).
+Merge to `main` and GitHub Actions:
 
-1. Builds and tests frontend + backend
+1. Re-runs the full CI gate chain
 2. Deploys CDK infrastructure (idempotent)
 3. Deploys SAM backend
 4. Syncs frontend to S3 and invalidates CloudFront cache
+5. Smoke-tests the live site (page 200, API 401 JSON, wrong code 403)
+
+Deploy jobs are skipped until the `SITE_DOMAIN` variable exists, so a fresh clone stays green.
 
 ## 5. Customizing
 

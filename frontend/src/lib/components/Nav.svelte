@@ -32,7 +32,7 @@
 					class:font-bold={isActive('/admin')}>Admin</a
 				>
 			{/if}
-			<a href="/" class="text-primary/60 hover:text-primary transition-colors">Logout</a>
+			<a href="/" class="text-primary/70 hover:text-primary transition-colors">Logout</a>
 		</div>
 
 		<!-- Mobile hamburger -->
@@ -63,12 +63,13 @@
 			<a href="/messages" class="text-primary block py-2" onclick={() => (menuOpen = false)}
 				>Messages</a
 			>
-			<a href="/gallery" class="text-primary block py-2" onclick={() => (menuOpen = false)}>Gallery</a
+			<a href="/gallery" class="text-primary block py-2" onclick={() => (menuOpen = false)}
+				>Gallery</a
 			>
 			{#if authState.role === 'admin'}
 				<a href="/admin" class="text-accent block py-2" onclick={() => (menuOpen = false)}>Admin</a>
 			{/if}
-			<a href="/" class="text-primary/60 block py-2" onclick={() => (menuOpen = false)}>Logout</a>
+			<a href="/" class="text-primary/70 block py-2" onclick={() => (menuOpen = false)}>Logout</a>
 		</div>
 	{/if}
 </nav>

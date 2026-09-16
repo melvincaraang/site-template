@@ -83,12 +83,16 @@ npm run test        # Jest tests
 
 ## CI/CD
 
-GitHub Actions workflow (`deploy.yml`) triggers on push to `main`:
-1. Builds frontend, runs lint + type-check + unit tests
-2. Runs backend Python unit tests
-3. Deploys CDK infrastructure
-4. Deploys SAM backend
-5. Syncs frontend build to S3, invalidates CloudFront
+`ci.yml` runs on every PR and push to `main`: frontend (lint, svelte-check, vitest, build,
+bundle budget), backend (ruff, mypy, pytest + coverage floor, prod-requirements import, sam
+validate), e2e (Playwright + axe), infra (tsc, jest + cdk-nag, synth), security (gitleaks
+blocking; semgrep/audits advisory), actionlint → one required `ci-status` check.
+`deploy.yml` (push to `main`) calls ci.yml, then CDK → SAM → S3 sync + invalidation → smoke
+test. Deploy jobs skip until the `SITE_DOMAIN` variable exists. Details in USAGE.md §4b.
+
+Local dev: `backend/scripts/dev_server.py` (real handler on moto, codes `party`/`admin`);
+`frontend`: `npm run dev`. Consistency tests keep `api/app.py` routes, `template.yaml` events,
+and the two requirements files in sync.
 
 ### Required GitHub Secrets / Vars
 

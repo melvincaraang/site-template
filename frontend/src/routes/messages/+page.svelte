@@ -124,18 +124,19 @@
 					id="author"
 					type="text"
 					bind:value={author}
-					class="border-accent/40 text-primary placeholder:text-primary/40 focus:border-accent focus:ring-accent bg-surface/50 w-full rounded-md border px-4 py-2"
+					class="border-accent/40 text-primary placeholder:text-primary/70 focus:border-accent focus:ring-accent bg-surface/50 w-full rounded-md border px-4 py-2"
 					maxlength="100"
 				/>
 			</div>
 			<div>
-				<label for="message" class="text-primary mb-1 block text-sm font-medium">Your message</label>
+				<label for="message" class="text-primary mb-1 block text-sm font-medium">Your message</label
+				>
 				<textarea
 					id="message"
 					bind:value={text}
 					placeholder="Write your message..."
 					rows="4"
-					class="border-accent/40 text-primary placeholder:text-primary/40 focus:border-accent focus:ring-accent bg-surface/50 w-full rounded-md border px-4 py-2"
+					class="border-accent/40 text-primary placeholder:text-primary/70 focus:border-accent focus:ring-accent bg-surface/50 w-full rounded-md border px-4 py-2"
 					maxlength="1000"
 				></textarea>
 			</div>
@@ -166,7 +167,7 @@
 				{:else}
 					<label
 						for="photo-input"
-						class="text-primary/60 hover:text-primary inline-flex cursor-pointer items-center gap-2 text-sm transition-colors"
+						class="text-primary/70 hover:text-primary inline-flex cursor-pointer items-center gap-2 text-sm transition-colors"
 					>
 						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -189,7 +190,7 @@
 			<button
 				type="submit"
 				disabled={submitting || !author.trim() || !text.trim()}
-				class="bg-accent hover:bg-accent-light text-white rounded-md px-6 py-2 transition-colors disabled:opacity-50"
+				class="bg-accent hover:bg-accent-light rounded-md px-6 py-2 text-white transition-colors disabled:opacity-50"
 			>
 				{submitting ? 'Sending...' : 'Send Message'}
 			</button>
@@ -204,11 +205,11 @@
 
 	<!-- Message wall -->
 	{#if loading}
-		<p class="text-primary/60 text-center italic">Loading messages...</p>
+		<p class="text-primary/70 text-center italic">Loading messages...</p>
 	{:else if loadError}
 		<p class="text-center text-red-600">{loadError}</p>
 	{:else if messages.length === 0}
-		<p class="text-primary/60 text-center">No messages yet. Be the first!</p>
+		<p class="text-primary/70 text-center">No messages yet. Be the first!</p>
 	{:else}
 		<div class="space-y-4">
 			{#each messages as msg (msg.id)}
@@ -224,9 +225,9 @@
 								/>
 							</button>
 						{/if}
-						<p class="text-primary/60 text-sm">
+						<p class="text-primary/70 text-sm">
 							&mdash; {msg.author}
-							<span class="text-primary/40 ml-2">
+							<span class="text-primary/70 ml-2">
 								{new Date(msg.createdAt).toLocaleDateString('en-US', {
 									month: 'long',
 									day: 'numeric',

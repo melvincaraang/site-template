@@ -1,4 +1,3 @@
-import json
 import os
 import time
 
@@ -8,10 +7,7 @@ import jwt
 
 def get_dynamodb_table():
     endpoint = os.environ.get("DYNAMODB_ENDPOINT")
-    if endpoint:
-        dynamodb = boto3.resource("dynamodb", endpoint_url=endpoint)
-    else:
-        dynamodb = boto3.resource("dynamodb")
+    dynamodb = boto3.resource("dynamodb", endpoint_url=endpoint) if endpoint else boto3.resource("dynamodb")
     return dynamodb.Table(os.environ["TABLE_NAME"])
 
 
@@ -38,10 +34,10 @@ def make_session_cookie(jwt_token: str) -> str:
 def get_session_from_event(event: dict) -> dict | None:
     headers = event.get("headers") or {}
     cookie_header = headers.get("Cookie") or headers.get("cookie") or ""
-    for part in cookie_header.split(";"):
-        part = part.strip()
+    for raw_part in cookie_header.split(";"):
+        part = raw_part.strip()
         if part.startswith("session="):
-            token = part[len("session="):]
+            token = part[len("session=") :]
             return verify_jwt(token)
     return None
 

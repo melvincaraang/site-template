@@ -1,8 +1,9 @@
 import json
 import os
-import jwt
 import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import jwt
 
 from api import app
 
@@ -22,7 +23,13 @@ class TestGetTokens:
         mock_table = MagicMock()
         mock_table.query.return_value = {
             "Items": [
-                {"PK": "TOKEN", "SK": "TOKEN#abc-123", "expiresAt": 9999999999, "label": "Family link", "createdAt": "2026-03-01T12:00:00Z"},
+                {
+                    "PK": "TOKEN",
+                    "SK": "TOKEN#abc-123",
+                    "expiresAt": 9999999999,
+                    "label": "Family link",
+                    "createdAt": "2026-03-01T12:00:00Z",
+                },
             ]
         }
         mock_get_table.return_value = mock_table
@@ -47,7 +54,8 @@ class TestPostToken:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "POST", "/api/admin/tokens",
+            "POST",
+            "/api/admin/tokens",
             body={"label": "For uncle Bob", "expiresInDays": 7},
             headers={"Cookie": _auth_cookie()},
         )
@@ -69,7 +77,8 @@ class TestDeleteToken:
         mock_get_table.return_value = mock_table
 
         event = make_event(
-            "DELETE", "/api/admin/tokens/abc-123",
+            "DELETE",
+            "/api/admin/tokens/abc-123",
             headers={"Cookie": _auth_cookie()},
         )
         result = app.lambda_handler(event, None)

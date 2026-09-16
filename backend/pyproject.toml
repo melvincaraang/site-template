@@ -1,0 +1,46 @@
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+src = ["."]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "C4", "SIM", "RET", "PL", "RUF"]
+ignore = [
+  "PLR2004",  # magic-value comparisons are fine in validation code
+  "PLR0911",  # validators legitimately have many return points
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+  "S101",     # asserts (tests, seed)
+  "RUF012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S107", "PLR0913", "PLR0917", "B011", "E501"]
+"scripts/**" = ["S104", "S105"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "scripts"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["api", "scripts"]
+strict_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = false
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["api"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+skip_covered = true
