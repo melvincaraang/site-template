@@ -21,8 +21,11 @@ env:
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
+    # A called workflow may not request more than the caller grants: ci.yml's
+    # security job needs pull-requests:read for gitleaks.
     permissions:
       contents: read
+      pull-requests: read
 
   deploy-infra:
     needs: ci
